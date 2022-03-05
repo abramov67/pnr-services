@@ -24,11 +24,9 @@ public class ClientSSHMain {
     private final String password;
     private Session session = null;
     private Connection connect = null;
-    private String mac;
+    private final String mac;
     public boolean isConnected = false;
     public boolean isAuth = false;
-    //int index = 0;
-
 
     public ClientSSHMain(String ip, int port, String login, String password, String mac) {
         this.ip = ip;
@@ -36,7 +34,6 @@ public class ClientSSHMain {
         this.login = login;
         this.password = password;
         this.mac = mac;
-
     }
 
     private List<String> sendCommandOA_(String command) {
@@ -58,49 +55,6 @@ public class ClientSSHMain {
         } else System.out.println("!!!session = null");
         return answer;
     }
-
-//    public List<String> sendCommandMACList(List<String> macs) {
-//        List<String> retList = new ArrayList<>();
-//        if(macs.size() == 0) return null;
-//        if (setConnect(ip, port, 5)) {
-//            index = 0;
-//            for (String mac : macs) {
-//                index++;
-//                System.out.println(index + " !!!mac = "+mac);
-//                Session session = setSession(login, password);
-//                if (isAuth) { //runTunnel(ip, port, login, password, 5);
-//                    try {
-//                        session.execCommand("topology.getMeterInfo " + mac);
-//                        List<String> answer;
-//                        answer = tl_exec(session);
-//                        if (answer != null) {
-//                            StringBuilder sb = new StringBuilder();
-//                            for (String s : answer) {
-//                                sb.append(s);
-//                            }
-//                            System.out.println("!!!mac = " + mac + ", answer = " + sb.toString());
-//                            retList.add(mac + ";" + sb.toString());
-//                        }
-//                    } catch (IOException e) {
-//                        System.out.println("!!!SSH-CLIENT: " + e.getMessage());
-//                        e.printStackTrace();
-//                    } finally {
-//                        isAuth = false;
-//                        //session.close();
-//                    }
-//                } else {
-//                    System.out.println("!!!session = false");
-//                    isAuth = false;
-//                }
-//            }
-//        } else  System.out.println("!!!connect = false");
-//        if (isConnected) {
-//            isConnected = false;
-//            isAuth = false;
-//            connect.close();
-//        }
-//        return retList;
-//    }
 
     private List<String> tl_exec() {
         List<String> ret = new ArrayList<>();
@@ -146,6 +100,39 @@ public class ClientSSHMain {
         return sendCommandOA_(command);
     }
 
+    private Session runTunnel(String ip, int port, String name, String pass, int connectRepeat) {
+        try {
+            connect = new Connection(ip, port);
+            while(connectRepeat > 0) {
+                try {
+                    connect.connect();
+                } catch (Exception e) {
+                    connectRepeat--;
+                    try {
+                        sleep(1000);
+                    } catch (InterruptedException ignored){}
+                    continue;
+                }
+                isConnected = true;
+                break;
+            }
+            if (isConnected) {
+                isAuth = connect.authenticateWithPassword(name, pass);
+                if (!isAuth) {
+                    throw new IOException("Auth failed.");
+                }
+                return connect.openSession();
+            }
+        } catch (UnknownHostException uhe) {
+            System.out.println("!!!SSH-CLIENT: Uncorrect host: " + uhe.getMessage());
+            uhe.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("SSH-CLIENT: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean setConnect(String ip, int port, int connectRepeat) {
         connect = new Connection(ip, port);
         while(connectRepeat > 0) {
@@ -183,37 +170,48 @@ public class ClientSSHMain {
         return null;
     }
 
-        private Session runTunnel(String ip, int port, String name, String pass, int connectRepeat) {
-        try {
-            connect = new Connection(ip, port);
-            while(connectRepeat > 0) {
-                try {
-                    connect.connect();
-                } catch (Exception e) {
-                    connectRepeat--;
-                    //System.out.println("repeat = "+connectRepeat + " !!!mac = " + mac);
-                    try {
-                        sleep(1000);
-                    } catch (InterruptedException ignored){}
-                    continue;
-                }
-                isConnected = true;
-                break;
-            }
-            if (isConnected) {
-                isAuth = connect.authenticateWithPassword(name, pass);
-                if (!isAuth) {
-                    throw new IOException("Auth failed.");
-                }
-                return connect.openSession();
-            }
-        } catch (UnknownHostException uhe) {
-            System.out.println("!!!SSH-CLIENT: Uncorrect host: " + uhe.getMessage());
-            uhe.printStackTrace();
-        } catch (IOException e) {
-            System.out.println("SSH-CLIENT: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return null;
-    }
+//    public List<String> sendCommandMACList(List<String> macs) {
+//        List<String> retList = new ArrayList<>();
+//        if(macs.size() == 0) return null;
+//        if (setConnect(ip, port, 5)) {
+//            index = 0;
+//            for (String mac : macs) {
+//                index++;
+//                System.out.println(index + " !!!mac = "+mac);
+//                Session session = setSession(login, password);
+//                if (isAuth) { //runTunnel(ip, port, login, password, 5);
+//                    try {
+//                        session.execCommand("topology.getMeterInfo " + mac);
+//                        List<String> answer;
+//                        answer = tl_exec(session);
+//                        if (answer != null) {
+//                            StringBuilder sb = new StringBuilder();
+//                            for (String s : answer) {
+//                                sb.append(s);
+//                            }
+//                            System.out.println("!!!mac = " + mac + ", answer = " + sb.toString());
+//                            retList.add(mac + ";" + sb.toString());
+//                        }
+//                    } catch (IOException e) {
+//                        System.out.println("!!!SSH-CLIENT: " + e.getMessage());
+//                        e.printStackTrace();
+//                    } finally {
+//                        isAuth = false;
+//                        //session.close();
+//                    }
+//                } else {
+//                    System.out.println("!!!session = false");
+//                    isAuth = false;
+//                }
+//            }
+//        } else  System.out.println("!!!connect = false");
+//        if (isConnected) {
+//            isConnected = false;
+//            isAuth = false;
+//            connect.close();
+//        }
+//        return retList;
+//    }
+
+
 }
