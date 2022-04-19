@@ -49,25 +49,25 @@ public class MeterServiceBean implements MeterService {
                         "                          ) order by last_activity desc limit 100"
         );
 
-        HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap = new HashMap<>();
-        List lst;
-
-        try (Transaction tx = persistence.createTransaction("yoda")) {
-            EntityManager em = persistence.getEntityManager("yoda");
-            Query query = em.createNativeQuery(sb.toString());
-            lst = query.getResultList();
-            tx.commit();
-        }
-
-            System.out.println("!!!lst.size = " + lst.size());
-
-            mapSet(hashMap, lst);
-
-            System.out.println("!!!hashMap.size = " + hashMap.size());
-
-        hashMap.forEach((t1, t2) -> {
-            (new Sm160Helper.WorkSm160Thread(t1, t2)).start();
-        });
+//        HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap = new HashMap<>();
+//        List lst;
+//
+//        try (Transaction tx = persistence.createTransaction("yoda")) {
+//            EntityManager em = persistence.getEntityManager("yoda");
+//            Query query = em.createNativeQuery(sb.toString());
+//            lst = query.getResultList();
+//            tx.commit();
+//        }
+//
+//            System.out.println("!!!lst.size = " + lst.size());
+//
+//            mapSet(hashMap, lst);
+//
+//            System.out.println("!!!hashMap.size = " + hashMap.size());
+//
+//        hashMap.forEach((t1, t2) -> {
+//            (new Sm160Helper.WorkSm160Thread(t1, t2)).start();
+//        });
 
     }
 

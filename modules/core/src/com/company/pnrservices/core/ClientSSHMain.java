@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.TimeLimiter;
 
 import java.io.*;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -24,25 +25,22 @@ public class ClientSSHMain {
     private final String password;
     private Session session = null;
     private Connection connect = null;
-    private final String mac;
     public boolean isConnected = false;
     public boolean isAuth = false;
 
-    public ClientSSHMain(String ip, int port, String login, String password, String mac) {
+    public ClientSSHMain(String ip, int port, String login, String password) {
         this.ip = ip;
         this.port = port;
         this.login = login;
         this.password = password;
-        this.mac = mac;
     }
 
     private List<String> sendCommandOA_(String command) {
-        List<String> answer = null;
+        List<String> answer = new ArrayList<>();
         session = runTunnel(ip, port, login, password, 5);
         if (session != null) {
             try {
                     session.execCommand(command);
-                    answer = new ArrayList<>();
                     answer = tl_exec();
             } catch (IOException e) {
                 System.out.println("!!!SSH-CLIENT: " + e.getMessage());
@@ -52,7 +50,7 @@ public class ClientSSHMain {
                 session.close();
                 connect.close();
             }
-        } else System.out.println("!!!session = null");
+        } else System.out.println("!!!session = null, for command = "+command);
         return answer;
     }
 
@@ -63,16 +61,17 @@ public class ClientSSHMain {
         try {
             tl.callWithTimeout(() -> {
                 InputStream stdout = new StreamGobbler(session.getStdout());
-                BufferedReader br = new BufferedReader(new InputStreamReader(stdout, "UTF-8"));
+                //BufferedReader br = new BufferedReader(new InputStreamReader(stdout, "UTF-8"));
+                BufferedReader br = new BufferedReader(new InputStreamReader(stdout, StandardCharsets.UTF_8));
                 int repeat = 5;
                 sleep(1000);
                 while (!br.ready() && repeat > 0) {
                     repeat--;
-                    System.out.println("!!!repeat = " + repeat + ", mac = " + mac);
                     sleep(500);
                 }
                 String line = br.readLine();
                 while (line != null) {
+                    //System.out.println("!!!line = "+line);
                     ret.add(line);
                     line = br.readLine();
                 }
@@ -80,12 +79,12 @@ public class ClientSSHMain {
                 stdout.close();
                 return null;
             }, 180L, TimeUnit.SECONDS);
-            return ret;
+            //return ret;
         } catch (TimeoutException e) {
             System.out.println("!!!SSH CONNECT: TIMEOUT!: " + e.getMessage());
             e.printStackTrace();
         } catch (UncheckedIOException e) {
-            System.out.println("!!!SSH CONNECT: TIMEOUT!: " + e.getMessage());
+            System.out.println("!!!SSH CONNECT: UncheckedIOException!: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
             System.out.println("!!!SSH CONNECT: " + e.getMessage());
@@ -93,7 +92,7 @@ public class ClientSSHMain {
         } finally {
             es.shutdown();
         }
-        return null;
+        return ret;
     }
 
     public List<String> sendCommandOA(String command) {
@@ -140,7 +139,7 @@ public class ClientSSHMain {
                 connect.connect();
             } catch (Exception e) {
                 connectRepeat--;
-                System.out.println("repeat = "+connectRepeat + " !!!mac = " + mac);
+                //System.out.println("repeat = "+connectRepeat + " !!!mac = " + mac);
                 try {
                     sleep(1000);
                 } catch (InterruptedException ignored){}
@@ -169,49 +168,5 @@ public class ClientSSHMain {
         }
         return null;
     }
-
-//    public List<String> sendCommandMACList(List<String> macs) {
-//        List<String> retList = new ArrayList<>();
-//        if(macs.size() == 0) return null;
-//        if (setConnect(ip, port, 5)) {
-//            index = 0;
-//            for (String mac : macs) {
-//                index++;
-//                System.out.println(index + " !!!mac = "+mac);
-//                Session session = setSession(login, password);
-//                if (isAuth) { //runTunnel(ip, port, login, password, 5);
-//                    try {
-//                        session.execCommand("topology.getMeterInfo " + mac);
-//                        List<String> answer;
-//                        answer = tl_exec(session);
-//                        if (answer != null) {
-//                            StringBuilder sb = new StringBuilder();
-//                            for (String s : answer) {
-//                                sb.append(s);
-//                            }
-//                            System.out.println("!!!mac = " + mac + ", answer = " + sb.toString());
-//                            retList.add(mac + ";" + sb.toString());
-//                        }
-//                    } catch (IOException e) {
-//                        System.out.println("!!!SSH-CLIENT: " + e.getMessage());
-//                        e.printStackTrace();
-//                    } finally {
-//                        isAuth = false;
-//                        //session.close();
-//                    }
-//                } else {
-//                    System.out.println("!!!session = false");
-//                    isAuth = false;
-//                }
-//            }
-//        } else  System.out.println("!!!connect = false");
-//        if (isConnected) {
-//            isConnected = false;
-//            isAuth = false;
-//            connect.close();
-//        }
-//        return retList;
-//    }
-
 
 }

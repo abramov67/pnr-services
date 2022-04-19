@@ -11,6 +11,12 @@
         <property name="serverSelector" ref="cuba_ServerSelector"/>
         <property name="remoteServices">
             <map>
+                <entry key="pnrservices_UpdateSerialService"
+                       value="com.company.pnrservices.service.UpdateSerialService"/>
+                <entry key="pnrservices_ClearTopologyService"
+                       value="com.company.pnrservices.service.ClearTopologyService"/>
+                <entry key="pnrservices_UpdateTopologyService"
+                       value="com.company.pnrservices.service.UpdateTopologyService"/>
             </map>
         </property>
     </bean>

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.persistence.NoResultException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 @Component(NativeSQLBean.NAME)
@@ -15,54 +17,58 @@ public class NativeSQLBean {
     @Inject
     private Persistence persistence;
 
-    public List getListYoda(String sql) {
-        List lst;
-        try (Transaction tx = persistence.createTransaction("yoda")) {
-            EntityManager em = persistence.getEntityManager("yoda");
-            Query query = em.createNativeQuery(sql);
-            lst = query.getResultList();
-            tx.commit();
-        }
-        if (lst.isEmpty()) return null; else return lst;
-    }
-
-    public Object getSingleYoda(String sql) {
+    public Object getSingleMain(String sql) {
         Object res = null;
-        try (Transaction tx = persistence.createTransaction("yoda")) {
-            EntityManager em = persistence.getEntityManager("yoda");
+        try (Transaction tx = persistence.createTransaction()) {
+            EntityManager em = persistence.getEntityManager();
             Query query = em.createNativeQuery(sql);
             res = query.getSingleResult();
             tx.commit();
-        } catch (NoResultException ignored) {
-            //no result
+        } catch (NoResultException e1) {
+            System.out.println(timeFormat(new Date())+" !!! Ошибка исполнения NoResultException NativeSQL.getSingleMain sql = '"+sql+"'");
+            e1.printStackTrace();
+        } catch (Exception e2) {
+            System.out.println(timeFormat(new Date())+" !!! Ошибка исполнения NativeSQL.getSingleMain:"+e2.getMessage()+", sql = '"+sql+"'");
+            e2.printStackTrace();
         }
         return res;
     }
 
-    public boolean executeYoda(String sql) {
+
+    public boolean executeMain(String sql) {
         boolean res = false;
-        try (Transaction tx = persistence.createTransaction("yoda")) {
-            EntityManager em = persistence.getEntityManager("yoda");
+        try (Transaction tx = persistence.createTransaction()) {
+            EntityManager em = persistence.getEntityManager();
             Query query = em.createNativeQuery(sql);
             query.executeUpdate();
             tx.commit();
             res = true;
         } catch (Exception e) {
+            System.out.println(timeFormat(new Date())+" !!! Ошибка исполнения NativeSQL.executeMain:"+e.getMessage()+", sql = '"+sql+"'");
             e.printStackTrace();
         }
         return res;
     }
 
     public List getListMain(String sql) {
-        List lst;
+        List lst = null;
         try (Transaction tx = persistence.createTransaction()) {
             EntityManager em = persistence.getEntityManager();
             Query query = em.createNativeQuery(sql);
             lst = query.getResultList();
             tx.commit();
+        } catch (Exception e) {
+            System.out.println(timeFormat(new Date())+" !!!Ошибка исполнения NativeSQL.getListMain:"+e.getMessage()+", sql = '"+sql+"'");
+            e.printStackTrace();
         }
-        if (lst.isEmpty()) return null; else return lst;
+        return lst;
     }
+
+    private String timeFormat(Date tm) {
+        String pattern = "HH:mm:ss";
+        return new SimpleDateFormat(pattern).format(tm);
+    }
+
 
     public static final String NAME = "pnrservices_NativeSQLBean";
 

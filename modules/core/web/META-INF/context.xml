@@ -2,15 +2,15 @@
     
     <!-- Switch off session serialization -->
     <Manager pathname=""/>
-    <!--Data store 'yoda' connection-->
+    <!-- Database connection-->
     <Resource driverClassName="org.postgresql.Driver"
               maxIdle="2"
               maxTotal="20"
               maxWaitMillis="5000"
-              name="jdbc/yoda"
-              password="cuba_develop"
+              name="jdbc/CubaDS"
+              password="k~KqjUp9?$$NJ4Ffx@x9"
               type="javax.sql.DataSource"
-              url="jdbc:postgresql://192.1.1.25:5432/backup_1701"
-              username="testcuba_develop"/>
+              url="jdbc:postgresql://192.1.1.25:5432/pnrServices"
+              username="pnrUserDB"/>
 
 </Context>

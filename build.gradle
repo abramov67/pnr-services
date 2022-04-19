@@ -15,7 +15,7 @@ buildscript {
     }
 }
 
-def modulePrefix = 'srv'
+def modulePrefix = 'ROOT'
 
 def globalModule = project(":${modulePrefix}-global")
 def coreModule = project(":${modulePrefix}-core")
@@ -104,9 +104,19 @@ configure(coreModule) {
     }
 
     task createDb(dependsOn: assembleDbScripts, description: 'Creates local database', type: CubaDbCreation) {
+        host = '192.1.1.25:5432'
+        dbName = 'pnrServices'
+        dbms = 'postgres'
+        dbUser = 'pnrUserDB'
+        dbPassword = 'k~KqjUp9?$$NJ4Ffx@x9'
     }
 
     task updateDb(dependsOn: assembleDbScripts, description: 'Updates local database', type: CubaDbUpdate) {
+        host = '192.1.1.25:5432'
+        dbName = 'pnrServices'
+        dbms = 'postgres'
+        dbUser = 'pnrUserDB'
+        dbPassword = 'k~KqjUp9?$$NJ4Ffx@x9'
     }
 }
 
@@ -168,3 +178,10 @@ task restart(dependsOn: ['stop', ":${modulePrefix}-core:deploy", ":${modulePrefi
 }
 restart.finalizedBy start
 
+task buildUberJar(type: CubaUberJarBuilding) {
+    singleJar = true
+    appProperties = ['cuba.automaticDatabaseUpdate': false,
+                     'cuba.dataSourceProvider'     : 'jndi']
+    logbackConfigurationFile = 'etc/uber-jar-logback.xml'
+    coreJettyEnvPath = 'modules/core/web/META-INF/jetty-env.xml'
+}

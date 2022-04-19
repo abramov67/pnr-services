@@ -1,12 +1,16 @@
 package com.company.pnrservices.service;
 
+import com.company.pnrservices.core.DropModulesHelper;
 import com.company.pnrservices.core.HermesShell;
 import com.company.pnrservices.core.NativeSQLBean;
-import com.haulmont.cuba.core.global.AppBeans;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.company.pnrservices.core.DropModulesHelper.*;
+import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
 
 @Service(DropModulesService.NAME)
 public class DropModulesServiceBean implements DropModulesService {
@@ -17,90 +21,117 @@ public class DropModulesServiceBean implements DropModulesService {
 
     @Override
     public void topologyUpdate() {
+        String TOKEN = "";
+        try {
+            TOKEN = getNewToken();
+        } catch (Exception e) {
+            System.out.println("!!!getNewToken exception = " + e.getMessage());
+            e.printStackTrace();
+        }
+
         List lst = nativeSQLBean.getListMain("select mac, num from get_mac_for_drop()");
-        System.out.println("!!!Main lst.size = " + lst.size());
-        if (lst != null) {
+        System.out.println("!!!topologyUpdate mac list size = " + lst.size());
+
+        if (!TOKEN.equals("")) {
             Integer index = 0;
-            for(Object row :  lst) {
+            for (Object row : lst) {
                 index++;
                 String mac = ((Object[]) row)[0].toString();
-                List meterIds = nativeSQLBean.getListYoda("select id from enerstroymain_meter where delete_ts is null and mac = '" + mac + "'");
+                List<String> meterIds = getMeterIds(mac, TOKEN);
                 if (meterIds != null) {
                     for (Object row_meter : meterIds) {
-                        UpdaterThread ut = new UpdaterThread(index, mac, row_meter.toString(), hermes_id);
-                        ut.start();
+                        (new DropModulesHelper.UpdaterThread(index, mac, row_meter.toString(), hermes_id, TOKEN, lst.size())).start();
                     }
                 }
             }
         }
     }
 
-    static class UpdaterThread extends Thread {
-        Integer index;
-        String mac;
-        String meter_id;
-        String hermes_id;
-        String terminal_id;
-        HermesShell hermesShell;
-        NativeSQLBean nativeSQLBean;
-
-        public UpdaterThread(Integer index, String mac, String meter_id, String hermes_id) {
-            this.index = index;
-            this.mac = mac;
-            this.meter_id = meter_id;
-            this.hermes_id = hermes_id;
-            this.hermesShell = new HermesShell(hermes_id, index);
-            this.nativeSQLBean = AppBeans.get(NativeSQLBean.class);
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            getTerminalFromShell();
-        }
-
-        private void getTerminalFromShell() {
-            String replyStr = hermesShell.getTerminalID(mac);
-            String s = extractTerminal(replyStr);
-            if (s != null) {
-                terminal_id = s;
-                updateTopology();
-            }
-        }
-
-        private String extractTerminal(String replyStr) {
-            if (replyStr.contains("[ERROR]"))  return null;
-            int ind = replyStr.indexOf("THW[");
-            if (ind > -1) {
-                return replyStr.substring(ind + 4, ind + 4 + 15);
-            } else return null;
-        }
-
-        private void updateTopology() {
-            if (terminal_id != null && meter_id != null && mac != null) {
-                Object res = inTopology();
-                String sql;
-                if (res != null) {
-                    sql = " update enerstroymain_topology set \n" +
-                            " UPDATE_TIME=now(), TERMINAL='"+terminal_id+"', eui='"+mac+"', version=version+1, " +
-                            " UPDATE_TS=now(), UPDATED_BY='patrik', options='updater' \n" +
-                            " where id = '"+res.toString()+"'";
-                } else {
-                    sql = " insert into ENERSTROYMAIN_TOPOLOGY (id, version, CREATED_BY, CREATE_TS, CREATE_TIME, \n" +
-                        " UPDATE_TIME, TERMINAL, EUI, HERMES_ID, METER_ID, options) values ( \n" +
-                        " newid(), 1, 'patrik', now(), '2001-01-01 00:00:00', \n" +
-                        " now(), '"+terminal_id+"', '"+mac+"', '"+hermes_id+"', '"+meter_id+"', 'updater')";
-                }
-                nativeSQLBean.executeYoda(sql);
-            }
-        }
-
-        private Object inTopology() {
-            Object ret;
-            String sql = " select id from ENERSTROYMAIN_TOPOLOGY where hermes_id='"+hermes_id+"' and meter_id = '"+meter_id+"'";
-            ret = nativeSQLBean.getSingleYoda(sql);
-            return ret;
-        }
-
+    private List<String> getMeterIds(String macs, String token) {
+        return getMeterIdREST(macs, token);
     }
+
+    @Override
+    public void openClosedTerminals() {
+        String TOKEN = "";
+        try {
+            TOKEN = getNewToken();
+        } catch (Exception e) {
+            System.out.println("!!!getNewToken exception = " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        class Result {
+            final String imei;
+            final String hermes_id;
+            public Result(String imei, String hermes_id){
+                this.imei = imei;
+                this.hermes_id = hermes_id;
+            }
+        }
+
+        List<Result> resultList = (List<Result>) nativeSQLBean
+                .getListMain("select imei, hermes_id from dev_last_closed_terminals")
+                .stream()
+                .map((t) -> new Result(((Object[]) t)[0].toString(), ((Object[]) t)[1].toString()))
+                .collect(Collectors.toList());
+
+        System.out.println("!!!OpenClosedTerminals list size = " + resultList.size());
+
+        Integer index = 0;
+        for (Result row : resultList) {
+            index++;
+            (new DropModulesHelper.OpenModuleThread(row.hermes_id, index, TOKEN, row.imei, resultList.size())).start();
+        }
+    }
+
+
+    @Override
+    public void dropZBModules(String withCloseTerminals) {
+        String TOKEN = "";
+        try {
+            TOKEN = getNewToken();
+        } catch (Exception e) {
+            System.out.println("!!!getNewToken exception = " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        class Result {
+            final String mac;
+            final String num;
+            public Result(String mac, String num){
+                this.mac = mac;
+                this.num = num;
+            }
+        }
+
+        List<Result> resultList = (List<Result>) nativeSQLBean
+                .getListMain("SELECT mac, num FROM dev_zbdropmodules")
+                .stream()
+                .map((t) -> new Result(((Object[]) t)[0].toString(), ((Object[]) t)[1].toString()))
+                .collect(Collectors.toList());
+
+        System.out.println("!!!dropZBModules list size = " + resultList.size());
+
+        if (withCloseTerminals.equals("1")) {
+            clearLastCloseTerminals();
+                HermesShell hermesShell = new HermesShell(hermes_id, 0, TOKEN);
+                getListForCloseTerminalsREST(hermes_id, TOKEN).forEach((t) -> {
+                    hermesShell.onOffTerminal(t, "off");
+                    saveClosedTerminal(t, hermes_id);
+                });
+        }
+
+        Integer index = 0;
+        for (int i = 0; i < 2; i++)
+            for (Result row : resultList) {
+                index++;
+                (new DropModulesHelper.DropZBModulesThread(hermes_id, index, TOKEN, row.mac, resultList.size(), i)).start();
+            }
+    }
+
+    private void saveClosedTerminal(String imei, String hermes_id) {
+        nativeSQLBean.executeMain("insert into last_closed_terminals(imei, hermes_id) values('"+imei+"', '"+hermes_id+"')");
+    }
+
 }

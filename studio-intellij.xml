@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CubaPluginProjectSettings">
+    <option name="hotDeploySrcDirectories">
+      <list>
+        <option value="modules\global\src" />
+        <option value="modules\core\src" />
+        <option value="modules\global\src" />
+        <option value="modules\web\src" />
+      </list>
+    </option>
+    <option name="hotDeployDstDirectories">
+      <list>
+        <option value="deploy\app_home\ROOT-core\conf" />
+        <option value="deploy\app_home\ROOT-core\conf" />
+        <option value="deploy\app_home\ROOT\conf" />
+        <option value="deploy\app_home\ROOT\conf" />
+      </list>
+    </option>
     <option name="stateVersion" value="1" />
     <option name="savedDbProperties">
       <list>
