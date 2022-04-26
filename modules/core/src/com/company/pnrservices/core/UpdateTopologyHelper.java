@@ -2,32 +2,23 @@ package com.company.pnrservices.core;
 
 import org.json.JSONObject;
 
+import static com.company.pnrservices.core.YodaRESTMethodsHelper.upsertMeterForUpdateTopologyREST;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.upsertTerminalForUpdateTopologyREST;
 
 public class UpdateTopologyHelper {
 
-    public static class UpdateTopologyThread extends Thread {
+    public static class TerminalUpdateTopologyThread extends Thread {
         Integer index;
         Integer size;
-//        String imeiShell;
-//        String idYoda;
         String token;
         JSONObject params;
 
-        public UpdateTopologyThread(Integer index, Integer size, String token, JSONObject params) {
+        public TerminalUpdateTopologyThread(Integer index, Integer size, String token, JSONObject params) {
             this.index = index;
             this.size = size;
             this.token = token;
             this.params = params;
         }
-
-//        public UpdateTopologyThread(Integer index, Integer size, String imeiShell, String idYoda, String token) {
-//            this.index = index;
-//            this.size = size;
-//            this.imeiShell = imeiShell;
-//            this.idYoda = idYoda;
-//            this.token = token;
-//        }
 
         @Override
         public void run() {
@@ -35,26 +26,40 @@ public class UpdateTopologyHelper {
             upsertTerminal();
         }
 
-        private void upsertTerminal() {
-//            JSONObject params = new JSONObject();
-//            params.put("imeiShell", imeiShell);
-//            params.put("idYoda", idYoda == null ? JSONObject.NULL : idYoda);
-
-            System.out.println(index+"/"+size+" !!!params = "+params.toString());
-
+        public void upsertTerminal() {
             upsertTerminalForUpdateTopologyREST(params.toString(), token);
+        }
+    }
 
+    public static class MeterUpdateTopologyThread extends Thread {
+        Integer indexTerminal;
+        Integer sizeTerminal;
+        Integer indexMeter;
+        Integer sizeMeter;
+        String token;
+        JSONObject params;
+        Integer globalCounter;
+
+        public MeterUpdateTopologyThread(Integer globalCounter, Integer indexTerminal, Integer sizeTerminal, Integer indexMeter, Integer sizeMeter, String token, JSONObject params) {
+            this.indexTerminal = indexTerminal;
+            this.sizeTerminal = sizeTerminal;
+            this.indexMeter = indexMeter;
+            this.sizeMeter = sizeMeter;
+            this.token = token;
+            this.params = params;
+            this.globalCounter = globalCounter;
         }
 
-//            if terminal in self.terminals_from_yoda:
-//        sql += "UPDATE public.enerstroymain_network_equipment SET HERMES_IP='%s',ONLINE_STATATUS=%s,LAST_ACTIVITY='%s', last_bot_connection=NOW() where imei='%s' ;" % (hermeses[self.hermes_id]['hermes_ip'],terminals[terminal]['status'],terminals[terminal]['terminal_activity'],terminal,)
-//                else:
-//        sql += "INSERT INTO public.enerstroymain_network_equipment (id, version, CREATED_BY, CREATE_TS, UPDATED_BY, UPDATE_TS,  type_id, model, number_, mac, imei, is_used,  manufacturer_id,  last_activity, online_statatus, version_number, hermes_ip, LAST_BOT_CONNECTION) VALUES   (newid(), 1, 'patrik', now(),'patrik', now(),  '8034dd00-f1fb-8f52-eed7-13b2724854bb', 'Коммуникационный шлюз арт. ШЛ-ZB-02', '%s', '','%s', False, '7ff1a40a-4964-8bfa-12a9-ccb8a65c795c', '%s', '%s', '', '%s', '2001-01-01 00:00:00');" % (terminal,terminal,terminals[terminal]['terminal_activity'], terminals[terminal]['status'], hermeses[self.hermes_id]['hermes_ip'] )
-//                if sql:
-//                self.pg.execute_and_commit(sql)
-//                return len(terminals)
+        @Override
+        public void run() {
+            super.run();
+            upsertMeter();
+        }
 
-
+        public void upsertMeter() {
+            upsertMeterForUpdateTopologyREST(params.toString(), token);
+        }
     }
+
 
 }

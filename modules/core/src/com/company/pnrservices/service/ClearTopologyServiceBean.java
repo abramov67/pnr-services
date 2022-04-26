@@ -1,5 +1,6 @@
 package com.company.pnrservices.service;
 
+import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -12,6 +13,8 @@ import static com.company.pnrservices.core.YodaRESTMethodsHelper.getNewToken;
 @Service(ClearTopologyService.NAME)
 public class ClearTopologyServiceBean implements ClearTopologyService {
 
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(ClearTopologyServiceBean.class);
+
     @Override
     public void clearTopology(String limitInt){
         String TOKEN = "";
@@ -22,9 +25,9 @@ public class ClearTopologyServiceBean implements ClearTopologyService {
             e.printStackTrace();
         }
 
-        System.out.println(timeFormat(new Date())+" !!!Запущена чистка топологии. limitInt = "+limitInt);
+        log.info(timeFormat(new Date()) + " !!!Запущена чистка топологии. limitInt = " + limitInt);
         clearTopologyREST(TOKEN);
-        System.out.println(timeFormat(new Date())+" !!!Чистка топологии завершена");
+        log.info(timeFormat(new Date()) + " !!!Чистка топологии завершена");
 
     }
 

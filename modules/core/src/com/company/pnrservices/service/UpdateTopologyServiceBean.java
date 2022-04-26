@@ -2,22 +2,28 @@ package com.company.pnrservices.service;
 
 import com.company.pnrservices.core.HermesShell;
 import com.company.pnrservices.core.UpdateTopologyHelper;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static com.company.pnrservices.core.YodaRESTMethodsHelper.getHermesIDListForUpdateTopologyREST;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.getNewToken;
 
 @Service(UpdateTopologyService.NAME)
 public class UpdateTopologyServiceBean implements UpdateTopologyService {
 
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
-    String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
+    private static final Logger log = LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
 
     @Override
     public void updateTopology() {
+        log.info("!!!Start UpdateTopology");
+
         String TOKEN = null;
         try {
             TOKEN = getNewToken();
@@ -27,79 +33,52 @@ public class UpdateTopologyServiceBean implements UpdateTopologyService {
         }
 
         if (TOKEN != null) {
-            HermesShell hs = new HermesShell(hermes_id, 0, TOKEN);
-            System.out.println("!!!UpdateTopology start token = " + TOKEN);
-            List<JSONObject> terminalsShell = hs.getTerminalsID();
-            log.info("!!!terminals.size = " + terminalsShell.size());
-            int index = 0;
-            int size = terminalsShell.size();
             String finalTOKEN = TOKEN;
-            terminalsShell.forEach(t -> new UpdateTopologyHelper
-                    .UpdateTopologyThread(index, size, finalTOKEN, t.put("hermes_id", hermes_id))
-                    .start());
-        }
-    }
+            List<String> hermesesList = getHermesIDListForUpdateTopologyREST(TOKEN);
+            System.out.println("!!!hermesesList.size = "+hermesesList.size());
+            hermesesList.forEach(hermes_id -> {
+                HermesShell hs = new HermesShell(hermes_id, 0, finalTOKEN);
+                List<JSONObject> terminalsShell = hs.getTerminalsID();
 
+                int sizeTerminal = terminalsShell.size();
+                int indexTerminal = 0;
+                for (JSONObject t : terminalsShell) {
+                    indexTerminal++;
+                    new UpdateTopologyHelper
+                            .TerminalUpdateTopologyThread(indexTerminal, sizeTerminal, finalTOKEN, t.put("hermes_id", hermes_id))
+                            .upsertTerminal();
+//                    new UpdateTopologyHelper
+//                            .TerminalUpdateTopologyThread(indexTerminal, sizeTerminal, finalTOKEN, t.put("hermes_id", hermes_id))
+//                            .start();
+                }
 
-    //        class Terminal {
-//            final String imeiShell;
-//            final String idYoda;
-//            final String number
-//
-//            public Terminal(String imeiShell, String idYoda, String number) {
-//                this.imeiShell = imeiShell;
-//                this.idYoda = idYoda;
-//                this.number = number;
-//            }
-//        }
+                indexTerminal = 0;
+                Integer globalCounter = 0;
+                for (JSONObject t : terminalsShell) {
+                    indexTerminal++;
+                    String terminal = new JSONArray(t.get("terminalHwId").toString()).get(0).toString();
 
-//            List<String> terminalsYoda = getTerminalsForUpdateTopologyREST(TOKEN);
-            //List<Terminal> resultTerminals = new ArrayList<>();
-            //terminalsShell.forEach(log::info);
+                    List<JSONObject> metersShell = hs.getMetersID(terminal)
+                            .stream()
+                            .filter(jsn -> !jsn.isNull("online"))
+                            .collect(Collectors.toList());
 
-//             terminalsShell.forEach(jsnShell -> {
-//                 log.info("!!!jsnShell="+jsnShell.toString());
-//                 JSONArray ja = new JSONArray(jsnShell.get("terminalHwId").toString());
-//                 String imeiShell = ja.get(0).toString();
-//                 String fnd = find(imeiShell, terminalsYoda);
-//                 String idYoda = null;
-//                 if (!fnd.equals("")) {
-//                     JSONArray jsn = new JSONArray(fnd);
-//                     idYoda = jsn.getString(1);
-//                 }
-//                 resultTerminals.add(new Terminal(imeiShell, idYoda));
-//             });
-//
-//             int index = 0;
-//             int size = resultTerminals.size();
-//             for (Terminal terminal : resultTerminals) {
-//                 index++;
-//
-//                 (new UpdateTopologyHelper
-//                         .UpdateTopologyThread(index, size, terminal.imeiShell, terminal.idYoda, TOKEN))
-//                         .start();
-//             }
-
-
-
-
-//            for (Terminal terminal : resultTerminals) {
-//                index++;
-//
-//                (new UpdateTopologyHelper
-//                        .UpdateTopologyThread(index, size, terminal.imeiShell, terminal.idYoda, TOKEN))
+                    int indexMeter = 0;
+                    int sizeMeter = metersShell.size();
+                    for (JSONObject meter : metersShell) {
+                        globalCounter++;
+                        indexMeter++;
+                        new UpdateTopologyHelper
+                                .MeterUpdateTopologyThread(globalCounter, indexTerminal, sizeTerminal, indexMeter, sizeMeter, finalTOKEN, meter)
+                                .upsertMeter();
+//                        new UpdateTopologyHelper
+//                        .MeterUpdateTopologyThread(globalCounter, indexTerminal, sizeTerminal, indexMeter, sizeMeter, finalTOKEN, meter)
 //                        .start();
-//            }
-
-//        }
-//    }
-
-//    private String find(String str, List<String> list) {
-//        String ret = "";
-//        try {
-//            ret = Arrays.stream(list.stream().filter(s -> s.contains(str)).toArray()).findFirst().get().toString();
-//        } catch (NoSuchElementException ignored) {  }
-//        return ret;
-//    }
-
+//                        try { sleep(30);} catch (InterruptedException ignore) { }
+                    }
+                }
+            });
+        }
+        log.info("!!!End UpdateTopology");
+    }
 }

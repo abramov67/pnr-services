@@ -3,6 +3,7 @@ package com.company.pnrservices.core;
 import com.haulmont.cuba.core.global.AppBeans;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -57,25 +58,21 @@ public class YodaRESTMethodsHelper {
     }
 
     private static String baseREST(List<NameValuePair> params, String token, String methodName, String retType) {
-        NativeSQLBean nativeSQLBean = AppBeans.get(NativeSQLBean.class);
-         List<String> baseParams  = Arrays.stream((Object[]) nativeSQLBean
-                 .getSingleMain("select url_scheme, url_host, url_path, authorization_, content_type " +
-                "from dev_rest_params where id_type = 0")).map(Object::toString).collect(Collectors.toList());
-
+        RESTConnectParamsBean restParams = AppBeans.get(RESTConnectParamsBean.class);
         URIBuilder builder = new URIBuilder();
-        builder.setScheme(baseParams.get(0))
-                .setHost(baseParams.get(1))
-                .setPath(baseParams.get(2)+methodName);
+        builder.setScheme(restParams.scheme)
+                .setHost(restParams.host)
+                .setPath(restParams.path+methodName);
 
         if (params != null)
             builder.setParameters(params);
 
         try {
             URI uri = builder.build();
-            org.apache.http.client.HttpClient httpClient = HttpClientBuilder.create().build();
-            org.apache.http.client.methods.HttpGet getRequest = new HttpGet(uri);
-            getRequest.addHeader("Authorization", baseParams.get(3) + token);
-            getRequest.addHeader("content-type", baseParams.get(4));
+            HttpClient httpClient = HttpClientBuilder.create().build();
+            HttpGet getRequest = new HttpGet(uri);
+            getRequest.addHeader("Authorization", restParams.authorization + token);
+            getRequest.addHeader("content-type", restParams.contentType);
 
             HttpResponse response = httpClient.execute(getRequest);
             BufferedReader br = new BufferedReader(new InputStreamReader((response.getEntity().getContent())));
@@ -92,6 +89,9 @@ public class YodaRESTMethodsHelper {
 
     //yes
     public static String getNewToken() {
+        RESTConnectParamsBean restConnectParamsBean = AppBeans.get(RESTConnectParamsBean.class);
+        restConnectParamsBean.refresh();
+
         String token;
         NativeSQLBean nativeSQLBean = AppBeans.get(NativeSQLBean.class);
         List<String> baseParams  = Arrays.stream((Object[]) nativeSQLBean
@@ -179,7 +179,7 @@ public class YodaRESTMethodsHelper {
     }
 
     public static void clearTopologyREST(String token) {
-        baseREST(null, token, " clearTopology", "object");
+        baseREST(null, token, "clearTopology", "object");
     }
 
     public static List<String> getTerminalsForUpdateTopologyREST(String token) {
@@ -192,4 +192,13 @@ public class YodaRESTMethodsHelper {
                 token, "upsertTerminalForUpdateTopology", "object");
     }
 
+    public static List<String> getHermesIDListForUpdateTopologyREST(String token) {
+        return jsonArrayToListStrings(baseREST(null,
+                token, "getHermesIDListForUpdateTopology", "object"));
+    }
+
+    public static void upsertMeterForUpdateTopologyREST(String jsonObjParams, String token) {
+        baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
+                token, "upsertMeterForUpdateTopology", "object");
+    }
 }
