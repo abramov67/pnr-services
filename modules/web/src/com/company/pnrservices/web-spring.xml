@@ -17,6 +17,7 @@
                        value="com.company.pnrservices.service.ClearTopologyService"/>
                 <entry key="pnrservices_UpdateTopologyService"
                        value="com.company.pnrservices.service.UpdateTopologyService"/>
+                <entry key="pnrservices_SM160Service" value="com.company.pnrservices.service.SM160Service"/>
             </map>
         </property>
     </bean>

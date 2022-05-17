@@ -201,4 +201,16 @@ public class YodaRESTMethodsHelper {
         baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
                 token, "upsertMeterForUpdateTopology", "object");
     }
+
+    public static List<JSONObject> getFirstForSM160REST(String token) {
+        return jsonArrayToListJSONObjects(baseREST(null,
+                token, "getFirstForSM160", "object"));
+    }
+
+    public static void updaterForSM160REST(String jsonObjParams, String token) {
+        baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
+                token, "updaterForSM160", "object");
+    }
+
+
 }
