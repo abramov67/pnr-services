@@ -28,6 +28,7 @@ public class UpdateTopologyHelper {
 
         public void upsertTerminal() {
             upsertTerminalForUpdateTopologyREST(params.toString(), token);
+            System.out.println(index+"/"+size+" !!!UpdateTopology upsertTerminal "+params.toString());
         }
     }
 
@@ -58,6 +59,7 @@ public class UpdateTopologyHelper {
 
         public void upsertMeter() {
             upsertMeterForUpdateTopologyREST(params.toString(), token);
+            System.out.println(indexTerminal+"/"+sizeTerminal+" - "+indexMeter+"/"+sizeMeter+" !!!UpdateTopology upsertMeter "+params.toString());
         }
     }
 

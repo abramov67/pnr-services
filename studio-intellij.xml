@@ -17,6 +17,7 @@
         <option value="deploy\app_home\ROOT\conf" />
       </list>
     </option>
+    <option name="groupUpdateScriptsBy" value="MONTH" />
     <option name="stateVersion" value="1" />
     <option name="savedDbProperties">
       <list>

@@ -9,7 +9,7 @@ public class DropModulesHelper {
 
     public static void clearLastCloseTerminals() {
         NativeSQLBean nativeSQLBean = AppBeans.get(NativeSQLBean.class);
-        nativeSQLBean.executeMain("truncate table last_closed_terminals ");
+        nativeSQLBean.clearLastClosedTerminals();
     }
 
 
@@ -87,7 +87,7 @@ public class DropModulesHelper {
             while (repeat > 0) {
                 repeat--;
                 if (hermesShell.onOffTerminal(terminal_imei, "on").contains("PermitNetworkJoinDevUartResponse")) {
-                    delLastClosedTerminal(terminal_imei);
+                    nativeSQLBean.deleteFormLastClosedTerminal(terminal_imei);
                     break;
                 }
                 try { sleep(500); } catch (InterruptedException ignored){}
@@ -96,9 +96,6 @@ public class DropModulesHelper {
 
         }
 
-        private void delLastClosedTerminal(String imei) {
-            nativeSQLBean.executeMain("delete from dev_last_closed_terminals where imei = '"+imei+"'");
-        }
     }
 
 
@@ -132,7 +129,7 @@ public class DropModulesHelper {
                 if (dropModule()) break;
                 try { sleep(500); } catch (InterruptedException ignored){}
             }
-            //System.out.println(index+"/"+size+" iteration="+iteration+" !!DropZBModulesThread mac = "+mac);
+            System.out.println(index+"/"+size+" iteration="+iteration+" !!DropZBModulesThread mac = "+mac);
         }
 
         private boolean dropModule() {

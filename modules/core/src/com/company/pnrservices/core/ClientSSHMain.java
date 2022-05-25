@@ -42,7 +42,7 @@ public class ClientSSHMain {
             try {
                     session.execCommand(command);
                     answer = tl_exec();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.out.println("!!!SSH-CLIENT: " + e.getMessage());
                 e.printStackTrace();
             }
@@ -50,7 +50,7 @@ public class ClientSSHMain {
                 session.close();
                 connect.close();
             }
-        } else System.out.println("!!!session = null, for command = "+command);
+        }
         return answer;
     }
 
@@ -71,7 +71,6 @@ public class ClientSSHMain {
                 }
                 String line = br.readLine();
                 while (line != null) {
-                    //System.out.println("!!!line = "+line);
                     ret.add(line);
                     line = br.readLine();
                 }
@@ -139,7 +138,6 @@ public class ClientSSHMain {
                 connect.connect();
             } catch (Exception e) {
                 connectRepeat--;
-                //System.out.println("repeat = "+connectRepeat + " !!!mac = " + mac);
                 try {
                     sleep(1000);
                 } catch (InterruptedException ignored){}

@@ -1,6 +1,8 @@
 package com.company.pnrservices.core;
 
+import com.company.pnrservices.entity.RestParams;
 import com.haulmont.cuba.core.global.AppBeans;
+import com.haulmont.cuba.core.global.DataManager;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -92,29 +94,26 @@ public class YodaRESTMethodsHelper {
         RESTConnectParamsBean restConnectParamsBean = AppBeans.get(RESTConnectParamsBean.class);
         restConnectParamsBean.refresh();
 
-        String token;
         NativeSQLBean nativeSQLBean = AppBeans.get(NativeSQLBean.class);
-        List<String> baseParams  = Arrays.stream((Object[]) nativeSQLBean
-                .getSingleMain("select url_scheme, url_host, url_path_token,  " +
-                        "authorization_token, content_type, usr_token, pwd_token " +
-                        "from dev_rest_params where id_type = 0")).map(Object::toString).collect(Collectors.toList());
 
+        String token;
+        RestParams baseParams = nativeSQLBean.getBaseParams();
         URIBuilder builder = new URIBuilder();
-        builder.setScheme(baseParams.get(0))
-                .setHost(baseParams.get(1))
-                .setPath(baseParams.get(2));
+        builder.setScheme(baseParams.getUrlScheme())
+                .setHost(baseParams.getUrlHost())
+                .setPath(baseParams.getUrlPathToken());
 
         try {
             URI uri = builder.build();
             org.apache.http.client.HttpClient httpClient = HttpClientBuilder.create().build();
             org.apache.http.client.methods.HttpPost getRequest = new HttpPost(uri);
-            getRequest.addHeader("Authorization", baseParams.get(3));
-            getRequest.addHeader("content-type", baseParams.get(4));
+            getRequest.addHeader("Authorization", baseParams.getAuthorizationToken());
+            getRequest.addHeader("content-type", baseParams.getContentType());
 
             List<NameValuePair> params = new ArrayList<NameValuePair>();
             params.add(new BasicNameValuePair("grant_type", "password"));
-            params.add(new BasicNameValuePair("username", baseParams.get(5)));
-            params.add(new BasicNameValuePair("password", baseParams.get(6)));
+            params.add(new BasicNameValuePair("username", baseParams.getUsrToken()));
+            params.add(new BasicNameValuePair("password", baseParams.getPwdToken()));
             getRequest.setEntity(new UrlEncodedFormEntity(params));
 
             HttpResponse response = httpClient.execute(getRequest);
@@ -124,8 +123,6 @@ public class YodaRESTMethodsHelper {
 
             JSONObject obj = new JSONObject(br.readLine());
             token = obj.getString("access_token");
-            //httpClient.getConnectionManager().shutdown();
-
             return token;
         } catch (URISyntaxException e1) {
             System.out.println("!!!getNewToken URISyntaxException: "+e1.getMessage());

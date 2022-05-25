@@ -100,17 +100,8 @@ public class MeterGSM {
 
 
             }
-            printResult();
             saveToYodaREST();
         }
-    }
-
-    private void printResult() {
-//        System.out.println(index+"/"+size+" !!!ip = "+ip+", replyGetMAC = "+bytesToHex(replyGetMAC)+", replyCheckInfo = "+bytesToHex(replyCheckInfo)+", replyToDiscover = "+bytesToHex(replyToDiscover));
-//        for (String mac : toDiscoverMACList) {
-//            System.out.println("!!!mac = " + mac);
-//        }
-//        System.out.println("!!!-----------------");
     }
 
     private void saveToYodaREST() {

@@ -10,7 +10,6 @@ public class AbramHelper {
     public static byte[] clearLast(byte[] b) {
         for (int i = b.length - 1; i >= 0; i--) {
             if (b[i] != 0x00) {
-               // System.out.println("!!!before clear = "+bytesToHex(b)+", after clear = "+bytesToHex(Arrays.copyOfRange(b, 0, i + 1)));
                 return Arrays.copyOfRange(b, 0, i + 1);
             }
         }

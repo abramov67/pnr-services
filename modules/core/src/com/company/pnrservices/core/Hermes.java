@@ -147,7 +147,6 @@ public class Hermes {
                 out.write(cmd);
                 out.flush();
                 byte[] bytes = readReply( 40);
-                System.out.println("!!!reply = "+bytesToHex(bytes));
                 ret = true;
             } else {
                 System.out.println("!!!Not connected to hermes_ip = " + hermes_ip);

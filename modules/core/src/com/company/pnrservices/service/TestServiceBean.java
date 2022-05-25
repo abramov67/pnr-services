@@ -8,17 +8,11 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 
-import java.util.List;
-
-import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
-
 @Service(TestService.NAME)
 public class TestServiceBean implements TestService {
 
     @Inject
     private Persistence persistence;
-    @Inject
-    private MeterService meterService;
     @Inject
     private Logger log;
 

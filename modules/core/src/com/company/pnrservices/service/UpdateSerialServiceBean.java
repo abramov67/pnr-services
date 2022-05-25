@@ -1,6 +1,7 @@
 package com.company.pnrservices.service;
 
 import org.json.JSONObject;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,8 +11,9 @@ import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
 
 @Service(UpdateSerialService.NAME)
 public class UpdateSerialServiceBean implements UpdateSerialService {
-    String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
-    //String hermes_id = "cd0acf73-3026-0684-7840-249d7f2bd758";
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpdateSerialServiceBean.class);
+    //String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
+    String hermes_id = "cd0acf73-3026-0684-7840-249d7f2bd758";
 
     @Override
     public void getSerialFromModules() {
@@ -24,7 +26,10 @@ public class UpdateSerialServiceBean implements UpdateSerialService {
             e.printStackTrace();
         }
 
-        macList = getMACListForUpdateSerialREST(hermes_id, "5000", TOKEN,"300");
+        log.info("!!!Start UpdateSerial");
+        macList = getMACListForUpdateSerialREST(hermes_id, "5000", TOKEN,"1");
+
+        hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
 
         int index = 0;
         for (JSONObject item : macList) {
@@ -33,6 +38,7 @@ public class UpdateSerialServiceBean implements UpdateSerialService {
             String type = item.getString("type").toLowerCase();
             if (type.contains("zb-m200")) (new UpdateSerialThread(hermes_id, index++, TOKEN, meter_id, mac, type, macList.size())).start();
         }
+        log.info("!!!End UpdateSerial selectList = "+macList.size()+", runningCount = "+index+" threads");
     }
 
 }

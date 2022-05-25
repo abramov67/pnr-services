@@ -1,21 +1,10 @@
 package com.company.pnrservices.core;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
-import com.company.pnrservices.core.Sm160Helper;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-
-import static org.apache.poi.util.HexDump.byteToHex;
 
 @Component("pnrservices_Sm160Helper")
 public class Sm160Helper {

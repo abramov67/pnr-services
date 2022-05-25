@@ -133,42 +133,4 @@ public class HermesShell {
         } else return null;
     }
 
-//    private String extractTerminalID(String replyStr) {
-//        if (replyStr.contains("[ERROR]"))  return null;
-//        int ind = replyStr.indexOf("THW[");
-//        if (ind > -1) {
-//            return replyStr.substring(ind + 4, ind + 4 + 15);
-//        } else return null;
-//    }
-//
-//    private String extractDataReceived(String replyStr) {
-//        if (replyStr.contains("dataReceivedTs=NONE"))  return null;
-//        int ind = replyStr.indexOf("dataReceivedTs=");
-//        if (ind > -1) {
-//            String date = replyStr.substring(ind + 20, ind + 20 + 13);
-//            if (date.contains("NONE")) return null;
-//            String year = "20"+date.substring(0, 2);
-//            String month = date.substring(2, 4);
-//            String day = date.substring(4, 6);
-//            String hour = date.substring(7, 9);
-//            String minute = date.substring(9, 11);
-//            String sec = date.substring(11, 13);
-//            //System.out.println("!!!date = "+date);
-//            //System.out.println("!!!replyStr = "+replyStr);
-//
-//            return year+"-"+month+"-"+day+" "+hour+":"+minute+":"+sec;
-//        } else return null;
-//    }
-//
-//    private Boolean extractOnlineStatus(String replyStr) {
-//        int ind = replyStr.indexOf("online=");
-//        if (ind > -1) {
-//            String date = replyStr.substring(ind + 7 + 5, ind + 7 + 5 + 3);
-//
-//            System.out.println("!!!online = ["+date+"]");
-//            System.out.println("!!!replyStr = ["+replyStr+"]");
-//            return date.equals("tru");
-//        } else return null;
-//    }
-
 }

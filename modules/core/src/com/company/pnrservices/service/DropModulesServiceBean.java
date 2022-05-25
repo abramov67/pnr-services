@@ -3,11 +3,13 @@ package com.company.pnrservices.service;
 import com.company.pnrservices.core.DropModulesHelper;
 import com.company.pnrservices.core.HermesShell;
 import com.company.pnrservices.core.NativeSQLBean;
+import com.company.pnrservices.entity.LastClosedTerminals;
+import com.company.pnrservices.entity.Zbdropmodules;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.company.pnrservices.core.DropModulesHelper.*;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
@@ -18,6 +20,8 @@ public class DropModulesServiceBean implements DropModulesService {
     private NativeSQLBean nativeSQLBean;
 
     String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
+    @Inject
+    private Logger log;
 
     @Override
     public void topologyUpdate() {
@@ -29,21 +33,22 @@ public class DropModulesServiceBean implements DropModulesService {
             e.printStackTrace();
         }
 
-        List lst = nativeSQLBean.getListMain("select mac, num from get_mac_for_drop()");
-        System.out.println("!!!topologyUpdate mac list size = " + lst.size());
+        log.info("!!!DropModules TopologyUpdate Start");
+        List <Zbdropmodules> zbMACList = nativeSQLBean.getMACForDropModules();
+
+        System.out.println("!!!DropModules topologyUpdate macList.size = " + zbMACList.size());
 
         if (!TOKEN.equals("")) {
             Integer index = 0;
-            for (Object row : lst) {
+            for (Zbdropmodules row : zbMACList) {
                 index++;
-                String mac = ((Object[]) row)[0].toString();
+                String mac = row.getMac();
                 List<String> meterIds = getMeterIds(mac, TOKEN);
-                if (meterIds != null) {
-                    for (Object row_meter : meterIds) {
-                        (new DropModulesHelper.UpdaterThread(index, mac, row_meter.toString(), hermes_id, TOKEN, lst.size())).start();
-                    }
+                for (Object row_meter : meterIds) {
+                    (new UpdaterThread(index, mac, row_meter.toString(), hermes_id, TOKEN, zbMACList.size())).start();
                 }
             }
+            log.info("!!!DropModules TopologyUpdate End threads run = "+index);
         }
     }
 
@@ -61,28 +66,18 @@ public class DropModulesServiceBean implements DropModulesService {
             e.printStackTrace();
         }
 
-        class Result {
-            final String imei;
-            final String hermes_id;
-            public Result(String imei, String hermes_id){
-                this.imei = imei;
-                this.hermes_id = hermes_id;
-            }
-        }
+        log.info("!!!DropModules OpenClosedTerminal Start");
 
-        List<Result> resultList = (List<Result>) nativeSQLBean
-                .getListMain("select imei, hermes_id from dev_last_closed_terminals")
-                .stream()
-                .map((t) -> new Result(((Object[]) t)[0].toString(), ((Object[]) t)[1].toString()))
-                .collect(Collectors.toList());
+        List<LastClosedTerminals> lastClosedTerminalsList = nativeSQLBean.getLastClosedTerminals();
 
-        System.out.println("!!!OpenClosedTerminals list size = " + resultList.size());
+        System.out.println("!!!DropModules OpenClosedTerminals list size = " + lastClosedTerminalsList.size());
 
         Integer index = 0;
-        for (Result row : resultList) {
+        for (LastClosedTerminals row : lastClosedTerminalsList) {
             index++;
-            (new DropModulesHelper.OpenModuleThread(row.hermes_id, index, TOKEN, row.imei, resultList.size())).start();
+            (new OpenModuleThread(row.getHermes(), index, TOKEN, row.getImei(), lastClosedTerminalsList.size())).start();
         }
+        log.info("!!!DropModules OpenClosedTerminal end, threads running = "+index);
     }
 
 
@@ -96,42 +91,37 @@ public class DropModulesServiceBean implements DropModulesService {
             e.printStackTrace();
         }
 
-        class Result {
-            final String mac;
-            final String num;
-            public Result(String mac, String num){
-                this.mac = mac;
-                this.num = num;
-            }
-        }
+        log.info("!!!DropModules DropZBModules Start");
+        List<Zbdropmodules> macList = nativeSQLBean.getMACForDropModules();
 
-        List<Result> resultList = (List<Result>) nativeSQLBean
-                .getListMain("SELECT mac, num FROM dev_zbdropmodules")
-                .stream()
-                .map((t) -> new Result(((Object[]) t)[0].toString(), ((Object[]) t)[1].toString()))
-                .collect(Collectors.toList());
+        System.out.println("!!!dropZBModules list size = " + macList.size());
 
-        System.out.println("!!!dropZBModules list size = " + resultList.size());
-
+        int terminalIndex = 0;
         if (withCloseTerminals.equals("1")) {
             clearLastCloseTerminals();
                 HermesShell hermesShell = new HermesShell(hermes_id, 0, TOKEN);
-                getListForCloseTerminalsREST(hermes_id, TOKEN).forEach((t) -> {
+                List<String> terminals = getListForCloseTerminalsREST(hermes_id, TOKEN);
+                for (String t : terminals) {
+                    terminalIndex++;
                     hermesShell.onOffTerminal(t, "off");
                     saveClosedTerminal(t, hermes_id);
-                });
+                }
+            log.info("!!!DropModules DropZBModules with closed terminals "+terminalIndex+" from "+terminals.size());
         }
 
         Integer index = 0;
-        for (int i = 0; i < 2; i++)
-            for (Result row : resultList) {
+        for (int i = 0; i < 2; i++) {
+            for (Zbdropmodules row : macList) {
                 index++;
-                (new DropModulesHelper.DropZBModulesThread(hermes_id, index, TOKEN, row.mac, resultList.size(), i)).start();
+                (new DropZBModulesThread(hermes_id, index, TOKEN, row.getMac(), macList.size(), i)).start();
             }
+        }
+        log.info("!!!DropModules DropZBModules end, threads runnings = "+index);
+
     }
 
     private void saveClosedTerminal(String imei, String hermes_id) {
-        nativeSQLBean.executeMain("insert into last_closed_terminals(imei, hermes_id) values('"+imei+"', '"+hermes_id+"')");
+        nativeSQLBean.insertLastClosedTerminal(imei, hermes_id);
     }
 
 }
