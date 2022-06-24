@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<window xmlns="http://schemas.haulmont.com/cuba/screen/window.xsd"
+        caption="SM160 logs"
+        focusComponent="idSM160LogsTable"
+        messagesPack="com.company.pnrservices.web.sm160">
+    <data readOnly="true">
+        <collection id="idSM160LogsDc"
+                    class="com.company.pnrservices.entity.SM160Log"
+                    view="sM160Log-browseView">
+            <loader id="idSM160LogsDl">
+                <query>
+                    <![CDATA[select l from pnrservices_SM160Log l]]>
+                </query>
+            </loader>
+        </collection>
+        <collection id="idSM160LogOperationsDc"
+                    class="com.company.pnrservices.entity.SM160LogOperations" view="sM160LogOperations-view">
+            <loader id="idSM160LogOperationsDl">
+                <query>
+                    <![CDATA[select e from pnrservices_SM160LogOperations e where e.sm160Log = :log]]>
+                </query>
+            </loader>
+        </collection>
+
+    </data>
+    <dialogMode height="600"
+                width="800"/>
+    <layout>
+            <split id="split" height="100%" orientation="horizontal" reversePosition="true" width="100%">
+                <vbox id="lookupBox" expand="idSM160LogsTable" height="100%" margin="false,true,false,false" spacing="true">
+<!--                    <vbox align="TOP_LEFT" margin="true" spacing="true" stylename="well">-->
+                    <hbox spacing="true">
+                        <hbox caption="поиск" spacing="true" margin="true,true,true,true" stylename="card">
+                            <textField id="idIPSearchTextField" caption="IP" width="120" align="MIDDLE_LEFT" stylename="small"/>
+                            <textField id="idNumSearchTextField" caption="номер" width="120" align="MIDDLE_LEFT" stylename="small"/>
+                        </hbox>
+                        <hbox caption="Запуск" spacing="true" margin="true,true,true,true" stylename="card">
+                            <textField id="idNumRun" caption="номер" align="TOP_LEFT" width="150" stylename="small"/>
+                            <textField id="idIPRun" caption="IP" align="TOP_LEFT" width="120" stylename="small"/>
+                            <textField id="idPortRun" caption="port" datatype="int" align="TOP_LEFT" width="50" stylename="small">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.NumberFormatter" format="#####"/>
+                            </textField>
+                            <button id="renBtn" caption="Запустить" align="BOTTOM_LEFT" invoke="runSingleIP" stylename="small"/>
+                        </hbox>
+                    </hbox>
+<!--                    </vbox>-->
+                    <groupTable id="idSM160LogsTable"
+                                width="100%"
+                                dataContainer="idSM160LogsDc"
+                                stylename="small" textSelectionEnabled="true">
+                        <actions>
+                            <action id="refresh" type="refresh" caption="обновить"/>
+                        </actions>
+                        <columns>
+                            <column id="ip" caption="IP"/>
+                            <column id="num" caption="номер" sort="DESCENDING"/>
+                            <column id="port" caption="порт">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.NumberFormatter" format="#########" />
+                            </column>
+                            <column id="macsCnt" caption="MAC cnt" generator="getMACsGen"/>
+                            <column id="createTs" caption="create">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm"/>
+                            </column>
+                            <column id="startTime" caption="start">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm:ss.SSS"/>
+                            </column>
+                            <column id="endTime" caption="end">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm:ss.SSS"/>
+                            </column>
+                            <column id="deltaTime" caption="minutes" generator="deltaGen"/>
+                        </columns>
+                        <rowsCount/>
+                        <buttonsPanel id="buttonsPanel" alwaysVisible="true">
+                                    <button id="refreshBtn" action="idSM160LogsTable.refresh" stylename="small"/>
+                        </buttonsPanel>
+                    </groupTable>
+                </vbox>
+                <vbox id="idDetailBox" height="100%" margin="false,false,false,true" expand="fieldGroupBox" spacing="true">
+                    <scrollBox id="fieldGroupBox">
+                        <groupTable id="idSM160LogOperationsTable"
+                                    width="100%"
+                                    dataContainer="idSM160LogOperationsDc" textSelectionEnabled="true" stylename="small">
+                            <columns>
+                                <column id="createTs" caption="start" sort="ASCENDING">
+                                    <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm:ss.SSS"/>
+                                </column>
+                                <column id="type" caption="тип"/>
+                                <column id="message" caption="message" maxTextLength="20"/>
+                                <column id="stackTrace" caption="Stack trace" maxTextLength="20"/>
+                            </columns>
+                        </groupTable>
+                    </scrollBox>
+                </vbox>
+            </split>
+    </layout>
+</window>

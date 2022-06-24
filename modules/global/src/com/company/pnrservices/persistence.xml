@@ -5,5 +5,8 @@
         <class>com.company.pnrservices.entity.Zbdropmodules</class>
         <class>com.company.pnrservices.entity.LastClosedTerminals</class>
         <class>com.company.pnrservices.entity.RestParams</class>
+        <class>com.company.pnrservices.entity.SM160Log</class>
+        <class>com.company.pnrservices.entity.SM160LogOperations</class>
+        <class>com.company.pnrservices.entity.SM160LogDiscovery</class>
     </persistence-unit>
 </persistence>

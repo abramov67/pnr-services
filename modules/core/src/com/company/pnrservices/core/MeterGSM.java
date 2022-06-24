@@ -1,25 +1,37 @@
 package com.company.pnrservices.core;
 
+import com.company.pnrservices.service.UpdateTopologyServiceBean;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.TimeLimiter;
 import com.sun.mail.iap.ByteArray;
 import org.apache.commons.lang3.ArrayUtils;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.io.UncheckedIOException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.company.pnrservices.core.AbramHelper.*;
+import static com.company.pnrservices.core.Sm160Helper.logSm160Discovery;
+import static com.company.pnrservices.core.Sm160Helper.logSm160Operations;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.updaterForSM160REST;
 import static java.lang.Thread.sleep;
 
 public class MeterGSM {
+    private static final Logger log = LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
 
     UUID id;
     String ip;
@@ -51,12 +63,19 @@ public class MeterGSM {
     public String smallVersionPO = null; //2
     public String optionNum = null; //1
     public String MAC = null;
-    public List<String> toDiscoverMACList = new ArrayList();
+    private List<String> toDiscoverMACList = new ArrayList();
+    private List<String> discoverReplyBuffer = new ArrayList();
+    private String resultStr ="";
+    private Set<String> discoverMACs = new HashSet<>();
+    private LocalTime startTime = LocalTime.now();
+    private String logId;
+
+    private boolean saveToYoda;
 
     int index;
     int size;
 
-    public MeterGSM(int index, int size, String ip, int port, String token, UUID id, String equipNumber) {
+    public MeterGSM(int index, int size, String ip, int port, String token, UUID id, String equipNumber, String logId, boolean saveToYoda) {
         this.id = id;
         this.ip = ip;
         this.port = port;
@@ -65,48 +84,115 @@ public class MeterGSM {
         this.index = index;
         this.size = size;
         this.equipNumber = equipNumber;
+        this.logId = logId;
+        this.saveToYoda = saveToYoda;
+    }
+
+    public MeterGSM(int index, int size, String ip, int port, String equipNumber, String logId, boolean saveToYoda) {
+        this.ip = ip;
+        this.port = port;
+        this.socketAddress = new InetSocketAddress(this.ip, this.port);
+        this.index = index;
+        this.size = size;
+        this.equipNumber = equipNumber;
+        this.logId = logId;
+        this.saveToYoda = saveToYoda;
     }
 
     public void setResult() throws IOException {
-        if (connect(2)) {
-            this.in = new DataInputStream(socket.getInputStream());
-            this.out = new DataOutputStream(socket.getOutputStream());
-            lastBootConnection = new Date();
-            if (checkInfo()) {
-                channelNum = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.toArray(replyCheckInfo[4])));
-                panID = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.addAll(
-                        ArrayUtils.toArray(replyCheckInfo[6], replyCheckInfo[5])
-                )));
-                networkPanID = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.addAll(
-                        ArrayUtils.toArray(
-                                replyCheckInfo[7],
-                                replyCheckInfo[8],
-                                replyCheckInfo[9],
-                                replyCheckInfo[10],
-                                replyCheckInfo[11],
-                                replyCheckInfo[12],
-                                replyCheckInfo[13],
-                                replyCheckInfo[14]
-                        )
-                )));
-                isJoiningPermitted = setPermitToJoin();
-                if (getMAC()) {
-                    setMAC();
-                    setVersion();
+
+        boolean cnt = connectNew2(2);
+
+        if (cnt) {
+            try {
+                logSm160Operations(logId, "setResult start", null, null);
+                lastBootConnection = new Date();
+                if (checkInfo()) {
+                    channelNum = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.toArray(replyCheckInfo[4])));
+                    panID = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.addAll(
+                            ArrayUtils.toArray(replyCheckInfo[6], replyCheckInfo[5])
+                    )));
+                    networkPanID = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.addAll(
+                            ArrayUtils.toArray(
+                                    replyCheckInfo[7],
+                                    replyCheckInfo[8],
+                                    replyCheckInfo[9],
+                                    replyCheckInfo[10],
+                                    replyCheckInfo[11],
+                                    replyCheckInfo[12],
+                                    replyCheckInfo[13],
+                                    replyCheckInfo[14]
+                            )
+                    )));
+                    isJoiningPermitted = setPermitToJoin();
+                    logSm160Operations(logId, "checkInfo result",
+                            "channelNum = "+isNullStr(channelNum)
+                                    +", panID = "+isNullStr(panID)
+                                    +", networkPanID = "+isNullStr(networkPanID)
+                                    +", JoiningPermitted = "+ isJoiningPermitted.toString(),
+                            null);
+
+                    if (getMAC()) {
+                        setMAC();
+                        setVersion();
+                        logSm160Operations(logId, "getMAC result",
+                                "MAC = "+isNullStr(MAC)
+                                        +", \nversionNumber = "+isNullStr(versionNumber)
+                                        +", \nboardVersion = "+isNullStr(boardVersion)
+                                        +", \nbigVersionPO = "+isNullStr(bigVersionPO)
+                                        +", \nsmallVersionPO = "+isNullStr(smallVersionPO)
+                                        +", \noptionNum = "+isNullStr(optionNum),
+                                null);
+
+                    }
                 }
-            }
-            if (toDiscover()) {
-                lastActive = new Date();
+                if (toDiscoverNew()) {
+                    resultStr = String.join("", discoverReplyBuffer);
+                    parseDiscoverBuffer();
+                    toDiscoverMACList.forEach(s ->
+                    {
+                        String mac = extractMACStr(s);
+                        if (!mac.equals("")) {
+                            discoverMACs.add(mac);
+                        }
+                    });
 
+                    lastActive = new Date();
 
+                    discoverMACs.forEach(mac -> {
+                        logSm160Discovery(logId, mac, null);
+                        logSm160Operations(logId, "toDiscoverNew mac", mac, null);
+                    });
+
+                }
+
+                if (discoverMACs.size() == 0) discoverMACs.add(equipNumber);
+
+                saveToYodaREST();
+
+            } finally {
+                logSm160Operations(logId, "setResult end", null, null);
+                socket.close();
+                System.out.println(dateTimeFormat(new Date())+"/"+index+"/"+size+"/"+deltaTimeFormat(startTime, LocalTime.now())
+                        +" !!!finally ip = "+ip+", macs.size = "+discoverMACs.size()+", MAC = "+MAC);
             }
-            saveToYodaREST();
         }
     }
 
+    private void parseDiscoverBuffer() {
+        toDiscoverMACList = Arrays.asList(resultStr.split("AA01").clone());
+
+    }
+
+    private String isNullStr(String value) {
+        return value == null ? "null" : value;
+    }
+
     private void saveToYodaREST() {
+        logSm160Operations(logId, "saveToYodaREST start",null, null);
+
         JSONObject jsn = new JSONObject();
-        jsn.put("id", id.toString());
+        jsn.put("id", isnull(id).toString());
         jsn.put("ip", ip);
         jsn.put("lastBotConnection", dateTimeFormat(lastBootConnection));
         jsn.put("lastActive", dateTimeFormat(lastActive));
@@ -120,11 +206,12 @@ public class MeterGSM {
         jsn.put("smallVersionPO", isnull(smallVersionPO).toString());
         jsn.put("optionNum", isnull(optionNum).toString());
         jsn.put("MAC", isnull(MAC).toString());
-        jsn.put("toDiscoverMAC", toDiscoverMACList);
+        jsn.put("toDiscoverMAC", discoverMACs);
         jsn.put("option", "sm160");
         jsn.put("equipNumber", equipNumber);
 
-        updaterForSM160REST(jsn.toString(), TOKEN);
+        if (saveToYoda) updaterForSM160REST(jsn.toString(), TOKEN);
+        logSm160Operations(logId, "saveToYodaREST end", jsn.toString(), null);
     }
 
     private Object isnull(Object value) {
@@ -222,6 +309,9 @@ public class MeterGSM {
             int ind = tmp.indexOf("F0D00");
             if (ind > 10) {
                 MAC = tmp.substring(ind - 11, ind + 5);
+
+                //-------------------
+                discoverMACs.add(MAC);
             }
         } catch (Exception e) {
             System.out.println("!!!MeterGSM.setMac = " + tmp);
@@ -230,19 +320,32 @@ public class MeterGSM {
         return res;
     }
 
-    private String extractMAC(byte[] b) {
+    private String extractMACStr(String s) {
         String res = "";
-        String tmp = bytesToHex(b);
         try {
-            int ind = tmp.indexOf("F0D00");
+            int ind = s.indexOf("F0D00");
             if (ind > 10) {
-                res = tmp.substring(ind - 11, ind + 5);
+                res = s.substring(ind - 11, ind + 5);
             }
         } catch (Exception e) {
 
         }
         return res;
     }
+
+//    private String extractMAC(byte[] b) {
+//        String res = "";
+//        String tmp = bytesToHex(b);
+//        try {
+//            int ind = tmp.indexOf("F0D00");
+//            if (ind > 10) {
+//                res = tmp.substring(ind - 11, ind + 5);
+//            }
+//        } catch (Exception e) {
+//
+//        }
+//        return res;
+//    }
 
     private boolean setPermitToJoin() {
         boolean res = false;
@@ -252,30 +355,102 @@ public class MeterGSM {
         return res;
     }
 
-    public boolean toDiscover() {
+    public boolean toDiscoverNew() {
+        logSm160Operations(logId, "toDiscoverNew start",null,null);
+
+        boolean reconnect = true;//false;
         boolean ret = false;
-        int cnt = 5;
+        int cntBased = 80;
+        int cnt = cntBased;
         try {
             if (socket.isConnected()) {
                 byte[] cmd = getCommand(7);
                 out.write(cmd);
                 out.flush();
-                while (cnt > 0) {
-                    replyToDiscover = readReply(16);
-                    if (validReply(replyToDiscover))
-                        toDiscoverMACList.add(extractMAC(replyToDiscover));
-                    sleep(1000);
-                    cnt--;
+//                //------------------------
+//                //тест, закрываем первое содеинение, и открываем второе
+//                socket.close();
+//                //System.out.println("!!!1 connect closed");
+//                if (connectNew2(1)) {
+//                    out.write(cmd);
+//                    out.flush();
+//                    //System.out.println("!!!2 connect open");
+//                    //-------------------
+                    while (cnt > 0) {
+                        replyToDiscover = readReplyNew(40);
+                        //if (replyToDiscover.length < 20) continue;
+                        if (isZeroAll(replyToDiscover)) {
+                            if (!reconnect) {
+                                if (connectNew2(1)) {
+                                    reconnect = true;
+                                    cnt = cntBased;
+                                    out.write(cmd);
+                                    out.flush();
+                                    //System.out.println("!!!RECONNECT");
+                                    continue;
+                                }
+                            }
+                            break;
+                        }
+                        //if (validReply(replyToDiscover))
+                        discoverReplyBuffer.add(bytesToHex(replyToDiscover));
+                        ret = true;
+                        try {
+                            sleep(100);
+                        } catch (Exception ignored) {
+                        }
+                        cnt--;
+                    }
                 }
-            }
         } catch (Exception e) {
-            System.out.println("!!!toDiscover exception: "+e.getMessage());
-            e.printStackTrace();
+            logSm160Operations(logId, "toDiscoverNew exception","message: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
+//            System.out.println("!!!toDiscoverNew exception: "+e.getMessage());
+//            e.printStackTrace();
+        }
+        finally {
+            logSm160Operations(logId, "toDiscoverNew finally end","ret = "+ret, null);
         }
         return ret;
     }
 
+    private boolean isZeroAll(byte[] b) {
+        boolean ret = true;
+        if (b.length == 0) return ret;
+        for (byte bb: b){
+            if (bb != (byte) 0) {
+                ret = false;
+                break;
+            }
+        }
+        if (!ret && discoverReplyBuffer.size() < 5) return false;
+        return ret;
+    }
+
+//    public boolean toDiscover() {
+//        boolean ret = false;
+//        int cnt = 10;
+//        try {
+//            if (socket.isConnected()) {
+//                byte[] cmd = getCommand(7);
+//                out.write(cmd);
+//                out.flush();
+//                while (cnt > 0) {
+//                    replyToDiscover = readReply(16);
+//                    if (validReply(replyToDiscover))
+//                        toDiscoverMACList.add(extractMAC(replyToDiscover));
+//                    sleep(5000);
+//                    cnt--;
+//                }
+//            }
+//        } catch (Exception e) {
+//            System.out.println("!!!toDiscover exception: "+e.getMessage());
+//            e.printStackTrace();
+//        }
+//        return ret;
+//    }
+
     public boolean checkInfo() {
+        logSm160Operations(logId, "checkInfo start", "проверка сети", null);
         boolean ret = false;
         try
         {
@@ -285,15 +460,22 @@ public class MeterGSM {
                 out.flush();
                 replyCheckInfo = readReply(17);
                 ret = validReply(replyCheckInfo);
+                logSm160Operations(logId, "checkInfo successfully end", "reply = "+bytesToHex(replyCheckInfo), null);
             }
         } catch (Exception e) {
-            System.out.println("!!!checkInfo exception: "+e.getMessage());
-            e.printStackTrace();
+            logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
+//            System.out.println("!!!checkInfo exception: "+e.getMessage());
+//            e.printStackTrace();
+        }
+        finally {
+            logSm160Operations(logId, "checkInfo finally end", "ret = "+ret, null);
         }
         return ret;
     }
 
     public boolean getMAC() {
+        logSm160Operations(logId, "getMAC start", null,null);
+
         boolean ret = false;
         try
         {
@@ -303,30 +485,187 @@ public class MeterGSM {
                 out.flush();
                 replyGetMAC = readReply( 35);
                 ret = validReply(replyGetMAC);
+                logSm160Operations(logId, "getMAC end successfully",
+                        "reply = "+bytesToHex(replyGetMAC),
+                        null);
             }
         } catch (Exception e) {
-            System.out.println("!!!checkInfo exception: "+e.getMessage());
-            e.printStackTrace();
+            logSm160Operations(logId, "getMAC exception",
+                    "message: "+e.getMessage(),
+                    Arrays.toString(e.getStackTrace()));
+        }
+        finally {
+            logSm160Operations(logId, "getMAC finally end","ret = "+ret,null);
         }
         return ret;
     }
 
-    private boolean connect(int conCnt) {
-        boolean res = false;
-        int i = 0;
-        while (!res && i < conCnt) {
-            try {
-                socket = new Socket();
-                socket.connect(socketAddress, connectTimeOut);
-                res = true;
-            } catch (Exception e) {
-                //e.printStackTrace();
-                //System.out.println("!!!MeterGSM.connect Ошибка i = " + i + ", ip = " + ((InetSocketAddress) socketAddress).getAddress() + ", message = " + e.getMessage());
-                //i++;
-                try { sleep(1000);}catch (InterruptedException ignored){}
+//    private boolean connect(int conCnt) {
+//        boolean res = false;
+//        int i = 0;
+//        if (socket != null) {
+//            if (socket.isConnected()) {
+//                try {
+//                    socket.close();
+//                } catch (IOException ignored) {
+//                }
+//            }
+//        }
+//        while (!res && i < conCnt) {
+//            try {
+//                socket = new Socket();
+//                try {
+//                    socket.connect(socketAddress, connectTimeOut);
+//                    this.in = new DataInputStream(socket.getInputStream());
+//                    this.out = new DataOutputStream(socket.getOutputStream());
+//                    res = true;
+//                }
+//                catch (SocketTimeoutException | ConnectException | NoRouteToHostException  ignored) { }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                System.out.println("!!!MeterGSM.connect Ошибка i = " + i + ", ip = " + ip + ", message = " + e.getMessage());
+//                i++;
+//                try { sleep(1000);}catch (InterruptedException ignored){}
+//            }
+//        }
+//        return res;
+//    }
+
+
+    private boolean connectNew2(int conCnt) {
+        AtomicBoolean res = new AtomicBoolean(false);
+        if (socket != null) {
+            if (socket.isConnected()) {
+                try {
+                    socket.close();
+                } catch (IOException ignored) {
+                }
             }
         }
-        return res;
+
+        ExecutorService es = Executors.newSingleThreadExecutor();
+        TimeLimiter tl = SimpleTimeLimiter.create(es);
+        try {
+            tl.callWithTimeout(() -> {
+                boolean timeOut = false;
+                int i = 0;
+                while (!res.get() && i < conCnt) {
+                    logSm160Operations(logId, "ConnectNew2 start", "conCnt = "+conCnt, null);
+                    try {
+                        socket = new Socket();
+                        try {
+                            socket.connect(socketAddress, connectTimeOut);
+                            this.in = new DataInputStream(socket.getInputStream());
+                            this.out = new DataOutputStream(socket.getOutputStream());
+                            res.set(true);
+                        }
+                        catch (SocketTimeoutException | ConnectException | NoRouteToHostException  e1) {
+                            logSm160Operations(logId, "ConnectNew2 exception1",
+                                    "message: "+e1.getMessage(),
+                                    Arrays.toString(e1.getStackTrace()));
+                            if (e1.getMessage().contains("connect timed out")) {
+                                 if (!timeOut) {
+                                     timeOut = true;
+                                     continue;
+                                 }
+                            }
+                            break;
+                        }
+                        logSm160Operations(logId, "ConnectNew2 connected", "conCnt = "+conCnt, null);
+                    } catch (Exception e) {
+                        logSm160Operations(logId, "ConnectNew2 exception2",
+                                "message: "+e.getMessage(),
+                                Arrays.toString(e.getStackTrace()));
+                        i++;
+                        try {
+                            sleep(500);
+                        } catch (InterruptedException ignored) {
+                        }
+                    }
+                }
+                return null;
+            }, 1200L, TimeUnit.SECONDS);
+        } catch (TimeoutException | UncheckedIOException e){
+            logSm160Operations(logId, "ConnectNew2 TimeoutException",
+                    "message: "+e.getMessage(),
+                    Arrays.toString(e.getStackTrace()));
+
+            //System.out.println(index+"/"+size+" !!!TIMEOUT connectNew2");
+            try {
+                socket.close();
+            } catch (Exception ignored) {}
+        } catch (Exception e){
+            logSm160Operations(logId, "ConnectNew2 Exception3",
+                    "message: "+e.getMessage(),
+                    Arrays.toString(e.getStackTrace()));
+//            System.out.println("!!!connectNew2 Exception: "+e.getMessage());
+//            e.printStackTrace();
+        }
+        finally {
+            es.shutdown();
+            logSm160Operations(logId, "ConnectNew2 finally end",
+                    "connected =  "+res.get(),null);
+        }
+
+        return res.get();
+    }
+
+
+
+//    private boolean connectNew(int conCnt) {
+//        boolean res = false;
+//        int i = 0;
+//        if (socket != null) {
+//            if (socket.isConnected()) {
+//                try {
+//                    socket.close();
+//                } catch (IOException ignored) {
+//                }
+//            }
+//        }
+//
+//        while (!res && i < conCnt) {
+//            System.out.println("!!!Im connecting i = "+i);
+//            try {
+//                socket = new Socket();
+//                //try {
+//                    socket.connect(socketAddress, connectTimeOut);
+//                    this.in = new DataInputStream(socket.getInputStream());
+//                    this.out = new DataOutputStream(socket.getOutputStream());
+//                    res = true;
+//                //}
+//                //catch (SocketTimeoutException | ConnectException | NoRouteToHostException  ignored) { }
+//                System.out.println("!!!Im connect yes i = "+i);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                System.out.println("!!!MeterGSM.connect Ошибка i = " + i + ", ip = " + ip + ", message = " + e.getMessage());
+//                i++;
+//                try { sleep(1000);}catch (InterruptedException ignored){}
+//            }
+//        }
+//        return res;
+//    }
+
+    private byte[] readReplyNew(int cntRead) throws IOException {
+        byte[] b = new byte[cntRead];
+        boolean run = true;
+        int runCnt = 0;
+        while (run && runCnt < 5) {
+            try {
+                sleep(100);
+            } catch (InterruptedException ignored) {
+            }
+            runCnt++;
+            if (in.available() > 0) {
+                in.read(b);
+               // System.out.println("!!!b = "+bytesToHex(b));
+                break;
+//                if (b[0] == (byte) 0xAA) {
+//                    break;
+//                }
+            }
+        }
+        return b;
     }
 
     private byte[] readReply(int cntRead) throws IOException {

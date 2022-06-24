@@ -2,6 +2,8 @@ package com.company.pnrservices.core;
 
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -42,6 +44,20 @@ public class AbramHelper {
         if (tm == null) return "null";
         String pattern = "yyyy-MM-dd HH:mm:ss";
         return new SimpleDateFormat(pattern).format(tm);
+    }
+
+    public static String deltaTimeFormat(LocalTime startTime, LocalTime endTime) {
+        return formatDuration(Duration.between(endTime, startTime));
+    }
+
+    public static String formatDuration(Duration duration) {
+        return String.format("%02d sec",
+                Math.abs(duration.getSeconds()));
+    }
+
+    public static String deltaDate(Date date1, Date date2) {
+        Duration d = Duration.between(date2.toInstant(), date1.toInstant());
+        return String.format("%1$2d:%2$2d:%3$2d.%4$3d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart(), d.toMillisPart());
     }
 
     public static boolean validReply(byte[] b) {

@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <views xmlns="http://schemas.haulmont.com/cuba/view.xsd">
 
+    <view entity="pnrservices_SM160Log" name="sM160Log-browseView" systemProperties="true">
+        <property name="ip"/>
+        <property name="num"/>
+        <property name="port"/>
+        <property name="startTime"/>
+        <property name="endTime"/>
+    </view>
+    <view entity="pnrservices_SM160LogOperations" name="sM160LogOperations-view" systemProperties="true">
+        <property name="type"/>
+        <property name="message"/>
+        <property name="stackTrace"/>
+    </view>
 </views>
