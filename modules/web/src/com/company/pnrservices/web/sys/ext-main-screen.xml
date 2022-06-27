@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <window xmlns="http://schemas.haulmont.com/cuba/screen/window.xsd"
-        caption="mainMsg://application.caption">
+        caption="ПНР Сервисы">
     <layout expand="foldersSplit">
         <hbox id="titleBar"
               stylename="c-app-menubar"

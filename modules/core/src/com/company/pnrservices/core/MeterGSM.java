@@ -460,7 +460,7 @@ public class MeterGSM {
                 out.flush();
                 replyCheckInfo = readReply(17);
                 ret = validReply(replyCheckInfo);
-                logSm160Operations(logId, "checkInfo successfully end", "reply = "+bytesToHex(replyCheckInfo), null);
+                logSm160Operations(logId, "checkInfo validReply = "+ret, "reply = "+bytesToHex(replyCheckInfo), null);
             }
         } catch (Exception e) {
             logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
@@ -485,7 +485,7 @@ public class MeterGSM {
                 out.flush();
                 replyGetMAC = readReply( 35);
                 ret = validReply(replyGetMAC);
-                logSm160Operations(logId, "getMAC end successfully",
+                logSm160Operations(logId, "getMAC validReply = "+ret,
                         "reply = "+bytesToHex(replyGetMAC),
                         null);
             }
