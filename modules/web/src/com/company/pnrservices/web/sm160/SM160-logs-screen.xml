@@ -5,19 +5,19 @@
         messagesPack="com.company.pnrservices.web.sm160">
     <data readOnly="true">
         <collection id="idSM160LogsDc"
-                    class="com.company.pnrservices.entity.SM160Log"
-                    view="sM160Log-browseView">
-            <loader id="idSM160LogsDl">
-                <query>
-                    <![CDATA[select l from pnrservices_SM160Log l]]>
-                </query>
-            </loader>
+                    class="com.company.pnrservices.entity.notpersistent.SM160LogSelectScr"
+                    view="_local">
+<!--            <loader id="idSM160LogsDl">-->
+<!--                <query>-->
+<!--                    <![CDATA[select l from pnrservices_SM160Log l]]>-->
+<!--                </query>-->
+<!--            </loader>-->
         </collection>
         <collection id="idSM160LogOperationsDc"
                     class="com.company.pnrservices.entity.SM160LogOperations" view="sM160LogOperations-view">
             <loader id="idSM160LogOperationsDl">
                 <query>
-                    <![CDATA[select e from pnrservices_SM160LogOperations e where e.sm160Log = :log]]>
+                    <![CDATA[select e from pnrservices_SM160LogOperations e where e.sm160Log.id = :log_id]]>
                 </query>
             </loader>
         </collection>
@@ -28,7 +28,6 @@
     <layout>
             <split id="split" height="100%" orientation="horizontal" reversePosition="true" width="100%">
                 <vbox id="lookupBox" expand="idSM160LogsTable" height="100%" margin="false,true,false,false" spacing="true">
-<!--                    <vbox align="TOP_LEFT" margin="true" spacing="true" stylename="well">-->
                     <hbox spacing="true">
                         <hbox caption="поиск" spacing="true" margin="true,true,true,true" stylename="card">
                             <textField id="idIPSearchTextField" caption="IP" width="120" align="MIDDLE_LEFT" stylename="small"/>
@@ -43,21 +42,17 @@
                             <button id="renBtn" caption="Запустить" align="BOTTOM_LEFT" invoke="runSingleIP" stylename="small"/>
                         </hbox>
                     </hbox>
-<!--                    </vbox>-->
                     <groupTable id="idSM160LogsTable"
                                 width="100%"
                                 dataContainer="idSM160LogsDc"
                                 stylename="small" textSelectionEnabled="true">
-                        <actions>
-                            <action id="refresh" type="refresh" caption="обновить"/>
-                        </actions>
                         <columns>
                             <column id="ip" caption="IP"/>
                             <column id="num" caption="номер" sort="DESCENDING"/>
                             <column id="port" caption="порт">
                                 <formatter class="com.haulmont.cuba.gui.components.formatters.NumberFormatter" format="#########" />
                             </column>
-                            <column id="macsCnt" caption="MAC cnt" generator="getMACsGen"/>
+                            <column id="macsCnt" caption="MAC cnt"/>
                             <column id="createTs" caption="create">
                                 <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm"/>
                             </column>
@@ -67,11 +62,13 @@
                             <column id="endTime" caption="end">
                                 <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm:ss.SSS"/>
                             </column>
-                            <column id="deltaTime" caption="minutes" generator="deltaGen"/>
+                            <column id="deltaTime" caption="delta">
+                                <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="HH:mm:ss.SSS"/>
+                            </column>
                         </columns>
                         <rowsCount/>
                         <buttonsPanel id="buttonsPanel" alwaysVisible="true">
-                                    <button id="refreshBtn" action="idSM160LogsTable.refresh" stylename="small"/>
+                            <button id="refreshBtn" stylename="small" invoke="refresh" caption="Обновить"/>
                         </buttonsPanel>
                     </groupTable>
                 </vbox>

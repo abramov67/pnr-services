@@ -2,7 +2,11 @@ package com.company.pnrservices.web.sm160;
 
 import com.company.pnrservices.entity.SM160Log;
 import com.company.pnrservices.entity.SM160LogOperations;
+import com.company.pnrservices.entity.notpersistent.SM160LogSelectScr;
+import com.company.pnrservices.service.NativeQueryService;
 import com.company.pnrservices.service.SM160Service;
+import com.haulmont.cuba.core.app.PersistenceManagerService;
+import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.DataManager;
 import com.haulmont.cuba.gui.Dialogs;
 import com.haulmont.cuba.gui.Notifications;
@@ -15,33 +19,23 @@ import com.haulmont.cuba.gui.model.InstanceContainer;
 import com.haulmont.cuba.gui.screen.*;
 
 import javax.inject.Inject;
-import java.time.Duration;
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
 
 @UiController("pnrservices_Sm160LogsScreen")
 @UiDescriptor("SM160-logs-screen.xml")
 public class Sm160LogsScreen extends Screen {
     @Inject
-    private CollectionContainer<SM160Log> idSM160LogsDc;
-    @Inject
-    private CollectionLoader<SM160Log> idSM160LogsDl;
+    private CollectionContainer<SM160LogSelectScr> idSM160LogsDc;
     @Inject
     private CollectionLoader<SM160LogOperations> idSM160LogOperationsDl;
-    @Inject
-    private CollectionContainer<SM160LogOperations> idSM160LogOperationsDc;
     @Inject
     private TextField<String> idIPSearchTextField;
     @Inject
     private TextField<String> idNumSearchTextField;
     @Inject
-    private GroupTable<SM160Log> idSM160LogsTable;
+    private GroupTable<SM160LogSelectScr> idSM160LogsTable;
     @Inject
     private Notifications notifications;
-    @Inject
-    private UiComponents uiComponents;
-    @Inject
-    private DataManager dataManager;
     @Inject
     private TextField<String> idIPRun;
     @Inject
@@ -52,6 +46,8 @@ public class Sm160LogsScreen extends Screen {
     private TextField<String> idNumRun;
     @Inject
     private Dialogs dialogs;
+    @Inject
+    private NativeQueryService nativeQueryService;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -68,13 +64,15 @@ public class Sm160LogsScreen extends Screen {
 
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
-        idSM160LogsDl.load();
+          idSM160LogsDc.setItems(getListQuery());
     }
 
     @Subscribe(id = "idSM160LogsDc", target = Target.DATA_CONTAINER)
-    public void onIdSM160LogsDcItemChange(InstanceContainer.ItemChangeEvent<SM160Log> event) {
-        idSM160LogOperationsDl.setParameter("log", event.getItem());
-        idSM160LogOperationsDl.load();
+    public void onIdSM160LogsDcItemChange(InstanceContainer.ItemChangeEvent<SM160LogSelectScr> event) {
+        if (event.getItem() != null) {
+            idSM160LogOperationsDl.setParameter("log_id", event.getItem().getId());
+            idSM160LogOperationsDl.load();
+        }
     }
 
     @Subscribe("idIPSearchTextField")
@@ -91,7 +89,7 @@ public class Sm160LogsScreen extends Screen {
         boolean f1 = !idIPSearchTextField.getRawValue().isEmpty();
         boolean f2 = !idNumSearchTextField.getRawValue().isEmpty();
         if (f1 && f2) {
-            Optional<SM160Log> log = idSM160LogsDc.getItems()
+            Optional<SM160LogSelectScr> log = idSM160LogsDc.getItems()
                     .stream()
                     .filter(it -> it.getIp().contains(idIPSearchTextField.getRawValue()) && it.getNum().contains(idNumSearchTextField.getRawValue()))
                     .findFirst();
@@ -101,7 +99,7 @@ public class Sm160LogsScreen extends Screen {
             }
         }
         if (f1 && !f2) {
-            Optional<SM160Log> log = idSM160LogsDc.getItems()
+            Optional<SM160LogSelectScr> log = idSM160LogsDc.getItems()
                     .stream()
                     .filter(it -> it.getIp().contains(idIPSearchTextField.getRawValue()))
                     .findFirst();
@@ -111,7 +109,7 @@ public class Sm160LogsScreen extends Screen {
             }
         }
         if (!f1 && f2) {
-            Optional<SM160Log> log = idSM160LogsDc.getItems()
+            Optional<SM160LogSelectScr> log = idSM160LogsDc.getItems()
                     .stream()
                     .filter(it -> it.getNum().contains(idNumSearchTextField.getRawValue()))
                     .findFirst();
@@ -120,35 +118,6 @@ public class Sm160LogsScreen extends Screen {
                 idSM160LogsTable.scrollTo(log.get());
             }
         }
-    }
-
-    public Component deltaGen(SM160Log entity) {
-        if(entity instanceof SM160Log){
-            if (entity.getStartTime() != null && entity.getEndTime() != null) {
-                Label label = uiComponents.create(Label.class);
-                label.setValue(deltaSec(entity.getStartTime(), entity.getEndTime()));
-                return label;
-            } else return null;
-        }else
-            return null;
-    }
-
-    private String deltaSec(Date date1, Date date2) {
-        Duration d = Duration.between(date2.toInstant(), date1.toInstant());
-        Long m = Math.abs(d.toMinutes());
-        return m.toString();
-    }
-
-    public Component getMACsGen(SM160Log entity) {
-        Integer cnt = dataManager.
-                loadValue("select count(d) cnt " +
-                        "from pnrservices_SM160LogDiscovery d " +
-                        "where d.sm160Log = :log", Integer.class)
-                .parameter("log", entity)
-                .one();
-        Label label = uiComponents.create(Label.class);
-        label.setValue(cnt.toString());
-        return label;
     }
 
     public void runSingleIP() {
@@ -169,7 +138,9 @@ public class Sm160LogsScreen extends Screen {
 
     private boolean validateRun() {
         boolean ret = false;
-        if (idIPRun.getRawValue().length() > 0 && idPortRun.getRawValue().length() > 0 && idNumRun.getRawValue().length() > 0) {
+        if (idIPRun.getRawValue().trim().length() > 0
+                && idPortRun.getRawValue().trim().length() > 0
+                && idNumRun.getRawValue().trim().length() > 0) {
             ret = true;
         } else {
             notifications.create()
@@ -180,16 +151,21 @@ public class Sm160LogsScreen extends Screen {
         return ret;
     }
 
+    public List<SM160LogSelectScr> getListQuery() {
+        return nativeQueryService.getListAsSM160LogSelectScr("select id,version,create_ts,created_by," +
+                "update_ts,updated_by,delete_ts,deleted_by,ip," +
+                "num,port,end_time,start_time,macs_cnt,delta_time from selectsm160logs()");
+    }
 
-    //
-//    private String deltaDate(Date date1, Date date2) {
-//        Duration d = Duration.between(date2.toInstant(), date1.toInstant());
-//        DecimalFormat df = new DecimalFormat("00");
-//        String hour = df.format(Math.abs(d.toHoursPart()));
-//        String minute = df.format(Math.abs(d.toMinutesPart()));
-//        String second = df.format(Math.abs(d.toSecondsPart()));
-//        String millis = df.format(Math.abs(d.toMillisPart()));
-//        return hour+":"+minute+":"+second+"."+millis;
-//    }
+    public void refresh() {
+        SM160LogSelectScr sel = idSM160LogsTable.getSingleSelected();
+        idSM160LogsDc.getMutableItems().clear();
+        idSM160LogsDc.setItems(getListQuery());
+        if (sel != null) {
+            idSM160LogsTable.setSelected(sel);
+            idSM160LogsTable.setShowSelection(true);
+            idSM160LogsTable.scrollTo(sel);
+        }
+    }
 
 }

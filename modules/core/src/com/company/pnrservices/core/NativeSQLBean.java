@@ -6,10 +6,9 @@ import com.company.pnrservices.entity.Zbdropmodules;
 import com.haulmont.cuba.core.global.DataManager;
 import com.haulmont.cuba.security.app.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 @Component(NativeSQLBean.NAME)

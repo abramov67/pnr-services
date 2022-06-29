@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <metadata xmlns="http://schemas.haulmont.com/cuba/metadata.xsd">
 
-    <metadata-model root-package="com.company.pnrservices" namespace="pnrservices"/>
+    <metadata-model root-package="com.company.pnrservices" namespace="pnrservices">
+        <class>com.company.pnrservices.entity.notpersistent.SM160LogSelectScr</class>
+    </metadata-model>
 
 </metadata>
