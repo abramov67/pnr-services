@@ -209,5 +209,9 @@ public class YodaRESTMethodsHelper {
                 token, "updaterForSM160", "object");
     }
 
+    public static void updaterForSM160RESTSingle(String jsonObjParams, String token) {
+        baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
+                token, "updaterForSM160Single", "object");
+    }
 
 }

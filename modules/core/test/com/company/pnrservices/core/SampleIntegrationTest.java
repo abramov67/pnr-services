@@ -25,9 +25,9 @@ public class SampleIntegrationTest {
 
     @BeforeAll
     public static void beforeAll() throws Exception {
-        metadata = cont.metadata();
-        persistence = cont.persistence();
         dataManager = AppBeans.get(DataManager.class);
+        metadata = AppBeans.get(Metadata.class);
+        persistence = AppBeans.get(Persistence.class);
     }
 
     @AfterAll
@@ -44,6 +44,7 @@ public class SampleIntegrationTest {
             List<User> users = query.getResultList();
             tx.commit();
             Assertions.assertEquals(1, users.size());
+            //Assertions.assertEquals(50, users.size());
         }
     }
 }

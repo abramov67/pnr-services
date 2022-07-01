@@ -1,6 +1,5 @@
 package com.company.pnrservices.core;
 
-import ch.ethz.ssh2.StreamGobbler;
 import com.company.pnrservices.entity.SM160Log;
 import com.company.pnrservices.entity.SM160LogDiscovery;
 import com.company.pnrservices.entity.SM160LogOperations;
@@ -153,12 +152,13 @@ public class Sm160Helper {
             this.sm160LogList = new ArrayList<>();
         }
 
-        public WorkSm160Thread(String num, String ip, int port) {
+        public WorkSm160Thread(String num, String ip, int port,  String token) {
             this.ip = ip;
             this.num = num;
             this.port = port;
             saveToYoda =  false;
             this.sm160LogList = new ArrayList<>();
+            this.TOKEN = token;
         }
 
         @Override
@@ -247,7 +247,7 @@ public class Sm160Helper {
                         sm160LogList.add(sm160Log);
                         //if (sim.sm_port != null) {
                             MeterGSM m = new MeterGSM(1, 1, ip, port, num,
-                                    sm160Log.getId().toString(), saveToYoda);
+                                    sm160Log.getId().toString(), saveToYoda, TOKEN);
                             try {
                                 m.setResult();
                             } catch (IOException e) {

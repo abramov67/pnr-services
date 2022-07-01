@@ -10,18 +10,14 @@ public class PnrservicesTestContainer extends TestContainer {
 
     public PnrservicesTestContainer() {
         super();
-        //noinspection ArraysAsListWithZeroOrOneArgument
+        dbUrl = "jdbc:postgresql://192.1.1.25:5432/yoda_test_service";
+        dbUser = "testcuba_develop";
+        dbPassword = "cuba_develop";
         appComponents = new ArrayList<>(Arrays.asList(
-                // list add-ons here: "com.haulmont.reports", "com.haulmont.addon.bproc", etc.
                 "com.haulmont.cuba"
         ));
         appPropertiesFiles = Arrays.asList(
-                // List the files defined in your web.xml
-                // in appPropertiesConfig context parameter of the core module
-                "com/company/pnrservices/app.properties",
-                // Add this file which is located in CUBA and defines some properties
-                // specifically for test environment. You can replace it with your own
-                // or add another one in the end.
+                "com/haulmont/cuba/testsupport/test-app.properties",
                 "com/company/pnrservices/test-app.properties");
         autoConfigureDataSource();
     }
@@ -38,9 +34,9 @@ public class PnrservicesTestContainer extends TestContainer {
         }
 
         @Override
-        public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        public void before() throws Throwable {
             if (!initialized) {
-                super.beforeAll(extensionContext);
+                super.before();
                 initialized = true;
             }
             setupContext();

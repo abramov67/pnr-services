@@ -28,6 +28,7 @@ import static com.company.pnrservices.core.AbramHelper.*;
 import static com.company.pnrservices.core.Sm160Helper.logSm160Discovery;
 import static com.company.pnrservices.core.Sm160Helper.logSm160Operations;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.updaterForSM160REST;
+import static com.company.pnrservices.core.YodaRESTMethodsHelper.updaterForSM160RESTSingle;
 import static java.lang.Thread.sleep;
 
 public class MeterGSM {
@@ -88,7 +89,7 @@ public class MeterGSM {
         this.saveToYoda = saveToYoda;
     }
 
-    public MeterGSM(int index, int size, String ip, int port, String equipNumber, String logId, boolean saveToYoda) {
+    public MeterGSM(int index, int size, String ip, int port, String equipNumber, String logId, boolean saveToYoda, String token) {
         this.ip = ip;
         this.port = port;
         this.socketAddress = new InetSocketAddress(this.ip, this.port);
@@ -97,6 +98,7 @@ public class MeterGSM {
         this.equipNumber = equipNumber;
         this.logId = logId;
         this.saveToYoda = saveToYoda;
+        this.TOKEN = token;
     }
 
     public void setResult() throws IOException {
@@ -211,6 +213,7 @@ public class MeterGSM {
         jsn.put("equipNumber", equipNumber);
 
         if (saveToYoda) updaterForSM160REST(jsn.toString(), TOKEN);
+        else updaterForSM160RESTSingle(jsn.toString(), TOKEN);
         logSm160Operations(logId, "saveToYodaREST end", jsn.toString(), null);
     }
 

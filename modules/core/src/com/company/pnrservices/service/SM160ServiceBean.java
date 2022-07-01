@@ -1,6 +1,7 @@
 package com.company.pnrservices.service;
 
 import com.company.pnrservices.core.Sm160Helper;
+import org.apache.poi.ss.formula.functions.T;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,34 +21,18 @@ public class SM160ServiceBean implements SM160Service {
     public void checkSM160Single(String num, String ip, String port) {
         log.info("!!!Start SM160 single");
 
-        //Integer intLimit = 10000000;
-
-//        String TOKEN = null;
-//        try {
-//            TOKEN = getNewToken();
-//        } catch (Exception e) {
-//            System.out.println("!!!getNewToken exception = " + e.getMessage());
-//            e.printStackTrace();
-//        }
+        String TOKEN = null;
+        try {
+            TOKEN = getNewToken();
+        } catch (Exception e) {
+            System.out.println("!!!getNewToken exception = " + e.getMessage());
+            e.printStackTrace();
+        }
 
         int intPort = Integer.parseInt(port);
 
-//        (new Sm160Helper.WorkSm160Thread(num, ip, intPort)).workSM160Single();
-        (new Sm160Helper.WorkSm160Thread(num, ip, intPort)).start();
+        if (TOKEN != null) (new Sm160Helper.WorkSm160Thread(num, ip, intPort, TOKEN)).start();
 
-//        if (TOKEN != null) {
-//            List<JSONObject> firstList = getFirstForSM160REST(intLimit.toString(), TOKEN);
-//            HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap = new HashMap<>();
-//            mapSetSingle(hashMap, firstList, ip);
-//            int  index = 0;
-//            for (Map.Entry<UUID, List<Sm160Helper.MapCheckSm160Sim>> map : hashMap.entrySet()) {
-//                index++;
-//                (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).workSM160();
-//                try {
-//                    sleep( 100);
-//                } catch (InterruptedException ignored) {      }
-//            }
-//        }
         log.info("!!!End SM160 single");
     }
 
@@ -116,34 +101,6 @@ public class SM160ServiceBean implements SM160Service {
             });
         }
     }
-
-//    private void mapSetSingle(HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap, List<JSONObject> lst, String ip) {
-//        if (lst.size() > 0) {
-//            lst.forEach(t -> {
-//                if (t.get(t.getString("sim_ip")).equals(ip)) {
-//                    Sm160Helper.MapCheckSm160Sim sm = new Sm160Helper.MapCheckSm160Sim();
-//                    UUID id = UUID.fromString(t.getString("id"));
-//                    sm.equip_number = t.getString("equip_number").equals("null") ? null : t.getString("equip_number");
-//                    sm.ne_id = t.getString("ne_id").equals("null") ? null : UUID.fromString(t.getString("ne_id"));
-//                    sm.id = id;
-//                    sm.sim_ip = t.getString("sim_ip").equals("null") ? null : t.getString("sim_ip");
-//                    sm.sim_id = t.getString("sim_id").equals("null") ? null : UUID.fromString(t.getString("sim_id"));
-//                    sm.sim_type = t.getString("sim_type").equals("null") ? null : t.getString("sim_type");
-//                    sm.sm_port = t.getString("sm_port").equals("null") ? null : Integer.parseInt(t.getString("sm_port"));
-//                    sm.mac = t.getString("mac").equals("null") ? null : t.getString("mac");
-//                    sm.network_pan_id = t.getString("networkPanId").equals("null") ? null : t.getString("networkPanId");
-//                    sm.channel_num = t.getString("channelNum").equals("null") ? null : Integer.parseInt(t.getString("channelNum"));
-//
-//                    hashMap.computeIfPresent(id, (k, vl) -> lstAdd((List) vl, sm));
-//                    hashMap.computeIfAbsent(id, k -> {
-//                        List<Sm160Helper.MapCheckSm160Sim> l = new ArrayList<>();
-//                        l.add(sm);
-//                        return l;
-//                    });
-//                }
-//            });
-//        }
-//    }
 
     private List lstAdd(List lst, Sm160Helper.MapCheckSm160Sim sm) {
         lst.add(sm);
