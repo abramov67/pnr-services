@@ -3,6 +3,7 @@ package com.company.pnrservices.core;
 import com.company.pnrservices.entity.SM160Log;
 import com.company.pnrservices.entity.SM160LogDiscovery;
 import com.company.pnrservices.entity.SM160LogOperations;
+import com.company.pnrservices.service.SM160Service;
 import com.company.pnrservices.service.UpdateTopologyServiceBean;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
@@ -113,18 +114,18 @@ public class Sm160Helper {
         dataManager.commit(sm160Log);
     }
 
-    public static class MapCheckSm160Sim {
-        public String equip_number;
-        public UUID ne_id;
-        public UUID id;
-        public String sim_ip;
-        public UUID sim_id;
-        public String sim_type;
-        public Integer sm_port;
-        public String mac;
-        public String network_pan_id = null;
-        public Integer channel_num = null;
-    }
+//    public static class MapCheckSm160Sim {
+//        public String equip_number;
+//        public UUID ne_id;
+//        public UUID id;
+//        public String sim_ip;
+//        public UUID sim_id;
+//        public String sim_type;
+//        public Integer sm_port;
+//        public String mac;
+//        public String network_pan_id = null;
+//        public Integer channel_num = null;
+//    }
 
 
     public static class WorkSm160Thread extends Thread {
@@ -133,7 +134,7 @@ public class Sm160Helper {
 
         boolean saveToYoda = true;
         UUID id;
-        List<MapCheckSm160Sim> ip_map;
+        List<SM160Service.MapCheckSm160Sim> ip_map;
         String TOKEN;
         int index;
         int size;
@@ -143,7 +144,7 @@ public class Sm160Helper {
         String ip;
         int port;
 
-        public WorkSm160Thread(int index, int size, UUID id, List<MapCheckSm160Sim> p_ip_map, String token) {
+        public WorkSm160Thread(int index, int size, UUID id, List<SM160Service.MapCheckSm160Sim> p_ip_map, String token) {
             this.id = id;
             this.ip_map = p_ip_map;
             this.TOKEN = token;
@@ -168,38 +169,6 @@ public class Sm160Helper {
             } else {
                 workSM160Single();
             }
-//            super.run();
-//            ExecutorService es = Executors.newSingleThreadExecutor();
-//            TimeLimiter tl = SimpleTimeLimiter.create(es);
-//            try {
-//                tl.callWithTimeout(() -> {
-//                    for (MapCheckSm160Sim sim : ip_map) {
-//                        SM160Log sm160Log = logSm160(sim.sim_ip, sim.equip_number, sim.sm_port);
-//                        sm160LogList.add(sm160Log);
-//                        if (sim.sm_port != null) {
-//                            MeterGSM m = new MeterGSM(index, size, sim.sim_ip, sim.sm_port,
-//                                    TOKEN, id, sim.equip_number,
-//                                    sm160Log.getId().toString());
-//                            try {
-//                                m.setResult();
-//                            } catch (IOException e) {
-//                                System.out.println("!!!workSM160 IOException: "+e.getMessage());
-//                                //e.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                    return null;
-//                }, 3000L, TimeUnit.SECONDS);
-//            } catch (TimeoutException | UncheckedIOException e){
-//                System.out.println(index+"/"+size+" !!!TIMEOUT workSm160");
-//            } catch (Exception e){
-//                System.out.println("!!!workSM160 Exception: "+e.getMessage());
-//                e.printStackTrace();
-//            }
-//            finally {
-//                sm160LogList.forEach(Sm160Helper::logSm160SetEnd);
-//                es.shutdown();
-//            }
         }
 
 
@@ -208,7 +177,7 @@ public class Sm160Helper {
             TimeLimiter tl = SimpleTimeLimiter.create(es);
             try {
                 tl.callWithTimeout(() -> {
-                    for (MapCheckSm160Sim sim : ip_map) {
+                    for (SM160Service.MapCheckSm160Sim sim : ip_map) {
                         SM160Log sm160Log = logSm160(sim.sim_ip, sim.equip_number, sim.sm_port);
                         sm160LogList.add(sm160Log);
                         if (sim.sm_port != null) {

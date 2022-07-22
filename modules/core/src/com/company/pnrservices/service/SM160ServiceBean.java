@@ -59,10 +59,10 @@ public class SM160ServiceBean implements SM160Service {
         if (TOKEN != null) {
             List<JSONObject> firstList = getFirstForSM160REST(intLimit.toString(), TOKEN);
             System.out.println("!!!firstList.size = "+firstList.size());
-            HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap = new HashMap<>();
+            HashMap<UUID, List<MapCheckSm160Sim>> hashMap = new HashMap<>();
             mapSet(hashMap, firstList);
             int  index = 0;
-            for (Map.Entry<UUID, List<Sm160Helper.MapCheckSm160Sim>> map : hashMap.entrySet()) {
+            for (Map.Entry<UUID, List<MapCheckSm160Sim>> map : hashMap.entrySet()) {
                 index++;
                 //(new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).workSM160();
                 (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).start();
@@ -76,10 +76,11 @@ public class SM160ServiceBean implements SM160Service {
         log.info("!!!End SM160");
     }
 
-    private void mapSet(HashMap<UUID, List<Sm160Helper.MapCheckSm160Sim>> hashMap, List<JSONObject> lst) {
+    @Override
+    public void mapSet(HashMap<UUID, List<MapCheckSm160Sim>> hashMap, List<JSONObject> lst) {
         if (lst.size() > 0) {
             lst.forEach(t -> {
-                Sm160Helper.MapCheckSm160Sim sm = new Sm160Helper.MapCheckSm160Sim();
+                MapCheckSm160Sim sm = new MapCheckSm160Sim();
                 UUID id = UUID.fromString(t.getString("id"));
                 sm.equip_number = t.getString("equip_number").equals("null") ? null : t.getString("equip_number");
                 sm.ne_id = t.getString("ne_id").equals("null") ? null : UUID.fromString(t.getString("ne_id"));
@@ -94,7 +95,7 @@ public class SM160ServiceBean implements SM160Service {
 
                 hashMap.computeIfPresent(id, (k, vl) -> lstAdd((List) vl, sm));
                 hashMap.computeIfAbsent(id, k -> {
-                    List<Sm160Helper.MapCheckSm160Sim> l = new ArrayList<>();
+                    List<MapCheckSm160Sim> l = new ArrayList<>();
                     l.add(sm);
                     return l;
                 });
@@ -102,7 +103,7 @@ public class SM160ServiceBean implements SM160Service {
         }
     }
 
-    private List lstAdd(List lst, Sm160Helper.MapCheckSm160Sim sm) {
+    private List lstAdd(List lst, MapCheckSm160Sim sm) {
         lst.add(sm);
         return lst;
     }

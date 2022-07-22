@@ -3,6 +3,7 @@ package com.company.pnrservices;
 import com.haulmont.cuba.core.EntityManager;
 import com.haulmont.cuba.core.Persistence;
 import com.haulmont.cuba.core.Transaction;
+import com.haulmont.cuba.core.entity.BaseUuidEntity;
 import com.haulmont.cuba.core.entity.StandardEntity;
 import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.CommitContext;
@@ -15,9 +16,9 @@ public abstract class BaseTest {
     @RegisterExtension
     public static PnrservicesTestContainer cont = PnrservicesTestContainer.Common.INSTANCE;
 
-     static Metadata metadata;
-     static Persistence persistence;
-     static DataManager dataManager;
+     public static Metadata metadata;
+     public static Persistence persistence;
+     public static DataManager dataManager;
 
     @BeforeAll
     public static void beforeAll() {
@@ -34,11 +35,11 @@ public abstract class BaseTest {
      * @param entities Class<? extends StandartEntity> varags
      */
     @SafeVarargs
-    public final static void clearDB(Class<? extends StandardEntity>... entities) {
+    public final static void clearDB(Class<? extends BaseUuidEntity>... entities) {
         try (Transaction tx = persistence.createTransaction()) {
             EntityManager em = persistence.getEntityManager();
             CommitContext removableContext = new CommitContext();
-            for (Class<? extends StandardEntity> entityToRemove : entities) {
+            for (Class<? extends BaseUuidEntity> entityToRemove : entities) {
                 dataManager.load(entityToRemove).list().forEach(removableContext::addInstanceToRemove);
             }
             removableContext.getRemoveInstances().forEach(entity -> {

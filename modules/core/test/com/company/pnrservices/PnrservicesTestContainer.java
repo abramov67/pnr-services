@@ -10,9 +10,9 @@ public class PnrservicesTestContainer extends TestContainer {
 
     public PnrservicesTestContainer() {
         super();
-        dbUrl = "jdbc:postgresql://192.1.1.25:5432/yoda_test_service";
-        dbUser = "testcuba_develop";
-        dbPassword = "cuba_develop";
+        dbUrl = "jdbc:postgresql://192.1.1.25:5432/pnrServices_test_services";
+        dbUser = "pnrUserDB";
+        dbPassword = "k~KqjUp9?$$NJ4Ffx@x9";
         appComponents = new ArrayList<>(Arrays.asList(
                 "com.haulmont.cuba"
         ));
@@ -49,6 +49,6 @@ public class PnrservicesTestContainer extends TestContainer {
             cleanupContext();
             // never stops - do not call super
         }
-        
+
     }
 }

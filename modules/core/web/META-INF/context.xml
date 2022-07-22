@@ -10,7 +10,7 @@
               name="jdbc/CubaDS"
               password="k~KqjUp9?$$NJ4Ffx@x9"
               type="javax.sql.DataSource"
-              url="jdbc:postgresql://192.1.1.25:5432/pnrServices_test"
+              url="jdbc:postgresql://192.1.1.25:5432/pnrServices_test_services"
               username="pnrUserDB"/>
 
 </Context>

@@ -6,16 +6,48 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class AbramHelper {
 
-    public static byte[] clearLast(byte[] b) {
+    public static byte[] clearLast0(byte[] b) {
         for (int i = b.length - 1; i >= 0; i--) {
             if (b[i] != 0x00) {
                 return Arrays.copyOfRange(b, 0, i + 1);
             }
         }
         return new byte[] {};
+    }
+
+    public static byte[] getBeforeAA(byte[] b) {
+        for (int i = b.length - 1; i >= 0; i--) {
+            if (b[i] == (byte) 0xAA && i > 0) {
+                return Arrays.copyOfRange(b, 0, i);
+            }
+        }
+        return b;
+    }
+
+    public static byte[] getBeforeTwoAA(byte[] b) {
+        for (int i = 0;  i <= b.length - 1; i++) {
+            if (b[i] == (byte) 0xAA && i > 0) {
+                return Arrays.copyOfRange(b, 0, i);
+            }
+        }
+        return b;
+    }
+
+    public static byte[] clearBeforeAA(byte[] b) {
+        if (b.length > 0) {
+            if (b[0] != (byte) 0xAA) {
+                for (int i = 0; i <= b.length - 1; i++) {
+                    if (b[i] == (byte) 0xAA && i > 0) {
+                        return Arrays.copyOfRange(b, i, b.length);
+                    }
+                }
+            }
+        }
+        return b;
     }
 
     public static byte[] hexStringToByteArray(String s) {
@@ -55,16 +87,17 @@ public class AbramHelper {
                 Math.abs(duration.getSeconds()));
     }
 
-    public static String deltaDate(Date date1, Date date2) {
-        Duration d = Duration.between(date2.toInstant(), date1.toInstant());
-        return String.format("%1$2d:%2$2d:%3$2d.%4$3d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart(), d.toMillisPart());
-    }
+//    public static String deltaDate(Date date1, Date date2) {
+//        Duration d = Duration.between(date2.toInstant(), date1.toInstant());
+//        return String.format("%1$2d:%2$2d:%3$2d.%4$3d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart(), d.toMillisPart());
+//    }
 
     public static boolean validReply(byte[] b) {
         boolean ret = false;
         if (b != null) {
             if (b.length > 0)
             if (b[0] == (byte) 0xAA) {
+                b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
                 ret = isCRC(b);
             }
         }

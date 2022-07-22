@@ -47,8 +47,8 @@ public class MeterGSM {
     int connectTimeOut = 60000;
 
     //Ответы
-    byte[] replyGetMAC = null;
-    byte[] replyCheckInfo = null;
+    public byte[] replyGetMAC = null;
+    public byte[] replyCheckInfo = null;
     byte[] replyToDiscover = null;
 
     //Результаты обработки ответов и соединения
@@ -65,7 +65,7 @@ public class MeterGSM {
     public String optionNum = null; //1
     public String MAC = null;
     private List<String> toDiscoverMACList = new ArrayList();
-    private List<String> discoverReplyBuffer = new ArrayList();
+    public List<String> discoverReplyBuffer = new ArrayList();
     private String resultStr ="";
     private Set<String> discoverMACs = new HashSet<>();
     private LocalTime startTime = LocalTime.now();
@@ -75,6 +75,9 @@ public class MeterGSM {
 
     int index;
     int size;
+
+    public boolean saveResult = true;
+
 
     public MeterGSM(int index, int size, String ip, int port, String token, UUID id, String equipNumber, String logId, boolean saveToYoda) {
         this.id = id;
@@ -128,44 +131,29 @@ public class MeterGSM {
                     )));
                     isJoiningPermitted = setPermitToJoin();
                     logSm160Operations(logId, "checkInfo result",
-                            "channelNum = "+isNullStr(channelNum)
-                                    +", panID = "+isNullStr(panID)
-                                    +", networkPanID = "+isNullStr(networkPanID)
-                                    +", JoiningPermitted = "+ isJoiningPermitted.toString(),
+                            "channelNum = " + isNullStr(channelNum)
+                                    + ", panID = " + isNullStr(panID)
+                                    + ", networkPanID = " + isNullStr(networkPanID)
+                                    + ", JoiningPermitted = " + isJoiningPermitted.toString(),
+                            null);
+                }
+
+                if (getMAC()) {
+                    setMAC();
+                    setVersion();
+                    logSm160Operations(logId, "getMAC result",
+                            "MAC = "+isNullStr(MAC)
+                                    +", \nversionNumber = "+isNullStr(versionNumber)
+                                    +", \nboardVersion = "+isNullStr(boardVersion)
+                                    +", \nbigVersionPO = "+isNullStr(bigVersionPO)
+                                    +", \nsmallVersionPO = "+isNullStr(smallVersionPO)
+                                    +", \noptionNum = "+isNullStr(optionNum),
                             null);
 
-                    if (getMAC()) {
-                        setMAC();
-                        setVersion();
-                        logSm160Operations(logId, "getMAC result",
-                                "MAC = "+isNullStr(MAC)
-                                        +", \nversionNumber = "+isNullStr(versionNumber)
-                                        +", \nboardVersion = "+isNullStr(boardVersion)
-                                        +", \nbigVersionPO = "+isNullStr(bigVersionPO)
-                                        +", \nsmallVersionPO = "+isNullStr(smallVersionPO)
-                                        +", \noptionNum = "+isNullStr(optionNum),
-                                null);
-
-                    }
                 }
+
                 if (toDiscoverNew()) {
-                    resultStr = String.join("", discoverReplyBuffer);
-                    parseDiscoverBuffer();
-                    toDiscoverMACList.forEach(s ->
-                    {
-                        String mac = extractMACStr(s);
-                        if (!mac.equals("")) {
-                            discoverMACs.add(mac);
-                        }
-                    });
-
-                    lastActive = new Date();
-
-                    discoverMACs.forEach(mac -> {
-                        logSm160Discovery(logId, mac, null);
-                        logSm160Operations(logId, "toDiscoverNew mac", mac, null);
-                    });
-
+                    generateToDiscoverMACs();
                 }
 
                 if (discoverMACs.size() == 0) discoverMACs.add(equipNumber);
@@ -181,6 +169,26 @@ public class MeterGSM {
         }
     }
 
+    public boolean generateToDiscoverMACs() {
+        resultStr = String.join("", discoverReplyBuffer);
+        parseDiscoverBuffer();
+        toDiscoverMACList.forEach(s ->
+        {
+            String mac = extractMACStr(s);
+            if (!mac.equals("")) {
+                discoverMACs.add(mac);
+            }
+        });
+
+        lastActive = new Date();
+
+        discoverMACs.forEach(mac -> {
+            logSm160Discovery(logId, mac, null);
+            logSm160Operations(logId, "toDiscoverNew mac", mac, null);
+        });
+        return true;
+    }
+
     private void parseDiscoverBuffer() {
         toDiscoverMACList = Arrays.asList(resultStr.split("AA01").clone());
 
@@ -190,7 +198,7 @@ public class MeterGSM {
         return value == null ? "null" : value;
     }
 
-    private void saveToYodaREST() {
+    public JSONObject saveToYodaREST() {
         logSm160Operations(logId, "saveToYodaREST start",null, null);
 
         JSONObject jsn = new JSONObject();
@@ -212,9 +220,12 @@ public class MeterGSM {
         jsn.put("option", "sm160");
         jsn.put("equipNumber", equipNumber);
 
-        if (saveToYoda) updaterForSM160REST(jsn.toString(), TOKEN);
-        else updaterForSM160RESTSingle(jsn.toString(), TOKEN);
+        if (saveResult) {
+            if (saveToYoda) updaterForSM160REST(jsn.toString(), TOKEN);
+            else updaterForSM160RESTSingle(jsn.toString(), TOKEN);
+        }
         logSm160Operations(logId, "saveToYodaREST end", jsn.toString(), null);
+        return jsn;
     }
 
     private Object isnull(Object value) {
@@ -222,19 +233,27 @@ public class MeterGSM {
     };
 
 
-    private void setVersion() {
+    public boolean setVersion() {
+        boolean ret = false;
         String tmp = bytesToHex(replyGetMAC);
         try {
-            byte[] sub = getByteSubArray(replyGetMAC, 12, 16);
-            versionNumber = new String(sub, StandardCharsets.UTF_8);
-            boardVersion = bytesToHex(getBoardVersion(replyGetMAC, 28, 2));
-            bigVersionPO = bytesToHex(getBigVersionPO(replyGetMAC, 30, 1));
-            smallVersionPO = bytesToHex(getSmallVersionPO(replyGetMAC, 31, 2));
-            optionNum = bytesToHex(getOptionNum(replyGetMAC, 33, 1));
+            if (replyGetMAC.length < 35) {
+                logSm160Operations(logId, "MeterGSM.setVersion replyGetMAC.length < 35", tmp, null);
+            } else {
+                byte[] sub = getByteSubArray(replyGetMAC, 12, 16);
+                versionNumber = new String(sub, StandardCharsets.UTF_8);
+                boardVersion = bytesToHex(getBoardVersion(replyGetMAC, 28, 2));
+                bigVersionPO = bytesToHex(getBigVersionPO(replyGetMAC, 30, 1));
+                smallVersionPO = bytesToHex(getSmallVersionPO(replyGetMAC, 31, 2));
+                optionNum = bytesToHex(getOptionNum(replyGetMAC, 33, 1));
+                ret = true;
+            }
         } catch (Exception e) {
-            System.out.println("!!!MeterGSM.setMac = " + tmp);
+            logSm160Operations(logId, "exception MeterGSM.setVersion", tmp, Arrays.toString(e.getStackTrace()));
+            System.out.println("!!!MeterGSM.setVersion exception: "+e.getMessage()+", tmp == " + tmp);
             e.printStackTrace();
         }
+        return ret;
     }
 
     private byte[] getBoardVersion(byte[] array, int from, int count) {
@@ -305,7 +324,7 @@ public class MeterGSM {
         return resultBytes;
     }
 
-    private String setMAC() {
+    public String setMAC() {
         String res = "";
         String tmp = bytesToHex(replyGetMAC);
         try {
@@ -315,6 +334,7 @@ public class MeterGSM {
 
                 //-------------------
                 discoverMACs.add(MAC);
+                res = MAC;
             }
         } catch (Exception e) {
             System.out.println("!!!MeterGSM.setMac = " + tmp);
@@ -336,20 +356,6 @@ public class MeterGSM {
         return res;
     }
 
-//    private String extractMAC(byte[] b) {
-//        String res = "";
-//        String tmp = bytesToHex(b);
-//        try {
-//            int ind = tmp.indexOf("F0D00");
-//            if (ind > 10) {
-//                res = tmp.substring(ind - 11, ind + 5);
-//            }
-//        } catch (Exception e) {
-//
-//        }
-//        return res;
-//    }
-
     private boolean setPermitToJoin() {
         boolean res = false;
         if (replyCheckInfo[15] != (byte) 0 ) {
@@ -360,7 +366,6 @@ public class MeterGSM {
 
     public boolean toDiscoverNew() {
         logSm160Operations(logId, "toDiscoverNew start",null,null);
-
         boolean reconnect = true;//false;
         boolean ret = false;
         int cntBased = 80;
@@ -370,15 +375,6 @@ public class MeterGSM {
                 byte[] cmd = getCommand(7);
                 out.write(cmd);
                 out.flush();
-//                //------------------------
-//                //тест, закрываем первое содеинение, и открываем второе
-//                socket.close();
-//                //System.out.println("!!!1 connect closed");
-//                if (connectNew2(1)) {
-//                    out.write(cmd);
-//                    out.flush();
-//                    //System.out.println("!!!2 connect open");
-//                    //-------------------
                     while (cnt > 0) {
                         replyToDiscover = readReplyNew(40);
                         //if (replyToDiscover.length < 20) continue;
@@ -429,29 +425,6 @@ public class MeterGSM {
         return ret;
     }
 
-//    public boolean toDiscover() {
-//        boolean ret = false;
-//        int cnt = 10;
-//        try {
-//            if (socket.isConnected()) {
-//                byte[] cmd = getCommand(7);
-//                out.write(cmd);
-//                out.flush();
-//                while (cnt > 0) {
-//                    replyToDiscover = readReply(16);
-//                    if (validReply(replyToDiscover))
-//                        toDiscoverMACList.add(extractMAC(replyToDiscover));
-//                    sleep(5000);
-//                    cnt--;
-//                }
-//            }
-//        } catch (Exception e) {
-//            System.out.println("!!!toDiscover exception: "+e.getMessage());
-//            e.printStackTrace();
-//        }
-//        return ret;
-//    }
-
     public boolean checkInfo() {
         logSm160Operations(logId, "checkInfo start", "проверка сети", null);
         boolean ret = false;
@@ -461,9 +434,16 @@ public class MeterGSM {
                 byte[] cmd = getCommand(9);
                 out.write(cmd);
                 out.flush();
-                replyCheckInfo = readReply(17);
+//                replyCheckInfo = readReply(17);
+                replyCheckInfo = readReply(40);
+                logSm160Operations(logId, "checkInfo replyBeforeClear", "reply = "+bytesToHex(replyCheckInfo), null);
+                replyCheckInfo = getBeforeTwoAA(clearBeforeAA(clearLast0(replyCheckInfo)));
                 ret = validReply(replyCheckInfo);
-                logSm160Operations(logId, "checkInfo validReply = "+ret, "reply = "+bytesToHex(replyCheckInfo), null);
+                if (replyCheckInfo.length < 17) {
+                    ret = false;
+                    logSm160Operations(logId, "checkInfo validReply = "+ret, "size < 17, reply = "+bytesToHex(replyCheckInfo), null);
+                } else logSm160Operations(logId, "checkInfo validReply = "+ret, "reply = "+bytesToHex(replyCheckInfo), null);
+                //replyCheckInfo = getBeforeAA(clearLast0(replyCheckInfo));
             }
         } catch (Exception e) {
             logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
@@ -487,6 +467,9 @@ public class MeterGSM {
                 out.write(cmd);
                 out.flush();
                 replyGetMAC = readReply( 35);
+                logSm160Operations(logId, "getMAC replyBeforeClear", "reply = "+bytesToHex(replyGetMAC),
+                        null);
+                replyGetMAC = getBeforeTwoAA(clearBeforeAA(clearLast0(replyGetMAC)));
                 ret = validReply(replyGetMAC);
                 logSm160Operations(logId, "getMAC validReply = "+ret,
                         "reply = "+bytesToHex(replyGetMAC),
@@ -535,7 +518,7 @@ public class MeterGSM {
 //    }
 
 
-    private boolean connectNew2(int conCnt) {
+    public boolean connectNew2(int conCnt) {
         AtomicBoolean res = new AtomicBoolean(false);
         if (socket != null) {
             if (socket.isConnected()) {
