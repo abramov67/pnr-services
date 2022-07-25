@@ -255,6 +255,26 @@ public class SM160ServiceTest extends BaseTest {
         return ret;
     }
 
+    void functionTest() {
+        assertEquals("null", meterGSM.isNullStr(null), "в функции meterGSM.isNullStr проблемы");
+        meterGSM.resultStr = "AA010000AA012222AA013333";
+        meterGSM.parseDiscoverBuffer();
+        assertEquals(true, parseDiscoverBufferCheck(), "не верно работает функция meterGSM.parseDiscoverBuffer");
+    }
+
+    boolean parseDiscoverBufferCheck() {
+        boolean ret = true;
+        meterGSM.resultStr = "AA010000AA011111AA012222AA013333";
+        meterGSM.parseDiscoverBuffer();
+        assertEquals(3, meterGSM.toDiscoverMACList.size(), "не верно работает функция meterGSM.parseDiscoverBuffer, размер списка meterGSM.toDiscoverMACList.size() != 3");
+        assertEquals(true, meterGSM.toDiscoverMACList.contains("0000"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 0000 в meterGSM.toDiscoverMACList");
+        assertEquals(true, meterGSM.toDiscoverMACList.contains("1111"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 1111 в meterGSM.toDiscoverMACList");
+        assertEquals(true, meterGSM.toDiscoverMACList.contains("2222"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 2222 в meterGSM.toDiscoverMACList");
+        assertEquals(true, meterGSM.toDiscoverMACList.contains("3333"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 3333 в meterGSM.toDiscoverMACList");
+        return ret;
+    }
+
+
     boolean validItemMap(UUID key, List<SM160Service.MapCheckSm160Sim> lst) {
         boolean ret = true;
         for (SM160Service.MapCheckSm160Sim item : lst) {

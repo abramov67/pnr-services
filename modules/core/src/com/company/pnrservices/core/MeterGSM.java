@@ -64,9 +64,9 @@ public class MeterGSM {
     public String smallVersionPO = null; //2
     public String optionNum = null; //1
     public String MAC = null;
-    private List<String> toDiscoverMACList = new ArrayList();
+    public List<String> toDiscoverMACList = new ArrayList();
     public List<String> discoverReplyBuffer = new ArrayList();
-    private String resultStr ="";
+    public String resultStr = "";
     private Set<String> discoverMACs = new HashSet<>();
     private LocalTime startTime = LocalTime.now();
     private String logId;
@@ -189,12 +189,12 @@ public class MeterGSM {
         return true;
     }
 
-    private void parseDiscoverBuffer() {
+    public void parseDiscoverBuffer() {
         toDiscoverMACList = Arrays.asList(resultStr.split("AA01").clone());
 
     }
 
-    private String isNullStr(String value) {
+    public String isNullStr(String value) {
         return value == null ? "null" : value;
     }
 
