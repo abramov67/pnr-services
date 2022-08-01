@@ -1,5 +1,8 @@
 package com.company.pnrservices.core;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.updateSerialREST;
 
 public class UpdateSerialHelper {
@@ -13,10 +16,11 @@ public class UpdateSerialHelper {
         String mac;
         String meter_id;
         String type;
-        String serial = "";
+        public String serial = "";
         Integer size;
+        boolean saveResult;
 
-        public UpdateSerialThread(String hermes_id, Integer index, String token, String meter_id, String mac, String type, Integer size) {
+        public UpdateSerialThread(String hermes_id, Integer index, String token, String meter_id, String mac, String type, Integer size, boolean saveResult) {
             hermesShell = new HermesShell(hermes_id, index, token);
             this.hermes_id = hermes_id;
             this.index = index;
@@ -25,18 +29,24 @@ public class UpdateSerialHelper {
             this.meter_id = meter_id;
             this.type = type;
             this.size = size;
+            this.saveResult = saveResult;
 
         }
 
         @Override
         public void run() {
-            String ret = "";
             super.run();
-            ret = getSerial(mac);
+            startSerial();
+        }
 
-            if (!ret.equals("")) {
-                updateSerialREST(mac, serial, token);
+        public String startSerial() {
+            String ret = "";
+            ret = getSerial(mac);
+            if (!ret.equals("") && saveResult) {
+                updateSerialREST(meter_id, mac, serial, token);
             }
+            System.out.println(timeFormat(new Date())+"  "+index+"/"+size+" !!!meter_id = "+meter_id+", mac = "+mac+", serial = "+serial);
+            return ret;
         }
 
         private String getSerial(String mac) {
@@ -48,7 +58,7 @@ public class UpdateSerialHelper {
             else return "";
         }
 
-        private boolean analyse(String replyStr) {
+        public boolean analyse(String replyStr) {
             boolean ret = false;
             if (!replyStr.contains("[ERROR]")){
                 int ind = replyStr.indexOf("serial=");
@@ -65,11 +75,16 @@ public class UpdateSerialHelper {
             return ret;
         }
 
-        private String extractSerial(String serial_) {
+        public String extractSerial(String serial_) {
             int ind = serial_.indexOf("}");
             if (ind > -1)
                 return serial_.substring(0, ind - 5);
             else return null;
+        }
+
+        private String timeFormat(Date tm) {
+            String pattern = "HH:mm:ss";
+            return new SimpleDateFormat(pattern).format(tm);
         }
     }
 

@@ -1,6 +1,8 @@
 package com.company.pnrservices.core;
 
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -95,10 +97,12 @@ public class AbramHelper {
     public static boolean validReply(byte[] b) {
         boolean ret = false;
         if (b != null) {
-            if (b.length > 0)
-            if (b[0] == (byte) 0xAA) {
+            if (b.length > 0) {
                 b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
-                ret = isCRC(b);
+                if (b[0] == (byte) 0xAA) {
+                    //b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
+                    ret = isCRC(b);
+                }
             }
         }
         return ret;

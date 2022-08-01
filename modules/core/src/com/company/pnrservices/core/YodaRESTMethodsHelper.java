@@ -2,7 +2,6 @@ package com.company.pnrservices.core;
 
 import com.company.pnrservices.entity.RestParams;
 import com.haulmont.cuba.core.global.AppBeans;
-import com.haulmont.cuba.core.global.DataManager;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -170,8 +169,8 @@ public class YodaRESTMethodsHelper {
     }
 
     //yes
-    public static void updateSerialREST(String mac, String number, String token) {
-        baseREST(createListPairParams("mac="+mac+";number="+number),
+    public static void updateSerialREST(String meter_id, String mac, String number, String token) {
+        baseREST(createListPairParams("meter_id="+meter_id+";mac="+mac+";number="+number),
                 token, "updateMeterForUpdateSerial", "object");
     }
 

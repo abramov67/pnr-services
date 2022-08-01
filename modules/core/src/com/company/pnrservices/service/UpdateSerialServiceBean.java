@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.company.pnrservices.core.UpdateSerialHelper.*;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
+import static java.lang.Thread.sleep;
 
 @Service(UpdateSerialService.NAME)
 public class UpdateSerialServiceBean implements UpdateSerialService {
@@ -27,7 +28,7 @@ public class UpdateSerialServiceBean implements UpdateSerialService {
         }
 
         log.info("!!!Start UpdateSerial");
-        macList = getMACListForUpdateSerialREST(hermes_id, "5000", TOKEN,"1");
+        macList = getMACListForUpdateSerialREST(hermes_id, "100000", TOKEN,"30");
 
         hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
 
@@ -36,8 +37,13 @@ public class UpdateSerialServiceBean implements UpdateSerialService {
             String mac = item.getString("mac");
             String meter_id = item.getString("meter_id");
             String type = item.getString("type").toLowerCase();
-            if (type.contains("zb-m200")) (new UpdateSerialThread(hermes_id, index++, TOKEN, meter_id, mac, type, macList.size())).start();
+//            if (type.contains("zb-m200")) (new UpdateSerialThread(hermes_id, index++, TOKEN, meter_id, mac, type, macList.size())).start();
+            (new UpdateSerialThread(hermes_id, ++index, TOKEN, meter_id, mac, type, macList.size(), true)).start();
+            try {
+                sleep(50);
+            } catch (Exception ignore) {}
         }
+
         log.info("!!!End UpdateSerial selectList = "+macList.size()+", runningCount = "+index+" threads");
     }
 

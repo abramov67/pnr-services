@@ -228,7 +228,7 @@ public class MeterGSM {
         return jsn;
     }
 
-    private Object isnull(Object value) {
+    public Object isnull(Object value) {
       if (value == null) return JSONObject.NULL; else return value;
     };
 
@@ -343,7 +343,7 @@ public class MeterGSM {
         return res;
     }
 
-    private String extractMACStr(String s) {
+    public String extractMACStr(String s) {
         String res = "";
         try {
             int ind = s.indexOf("F0D00");
@@ -412,7 +412,7 @@ public class MeterGSM {
         return ret;
     }
 
-    private boolean isZeroAll(byte[] b) {
+    public boolean isZeroAll(byte[] b) {
         boolean ret = true;
         if (b.length == 0) return ret;
         for (byte bb: b){
@@ -485,38 +485,6 @@ public class MeterGSM {
         }
         return ret;
     }
-
-//    private boolean connect(int conCnt) {
-//        boolean res = false;
-//        int i = 0;
-//        if (socket != null) {
-//            if (socket.isConnected()) {
-//                try {
-//                    socket.close();
-//                } catch (IOException ignored) {
-//                }
-//            }
-//        }
-//        while (!res && i < conCnt) {
-//            try {
-//                socket = new Socket();
-//                try {
-//                    socket.connect(socketAddress, connectTimeOut);
-//                    this.in = new DataInputStream(socket.getInputStream());
-//                    this.out = new DataOutputStream(socket.getOutputStream());
-//                    res = true;
-//                }
-//                catch (SocketTimeoutException | ConnectException | NoRouteToHostException  ignored) { }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                System.out.println("!!!MeterGSM.connect Ошибка i = " + i + ", ip = " + ip + ", message = " + e.getMessage());
-//                i++;
-//                try { sleep(1000);}catch (InterruptedException ignored){}
-//            }
-//        }
-//        return res;
-//    }
-
 
     public boolean connectNew2(int conCnt) {
         AtomicBoolean res = new AtomicBoolean(false);
@@ -596,42 +564,6 @@ public class MeterGSM {
         return res.get();
     }
 
-
-
-//    private boolean connectNew(int conCnt) {
-//        boolean res = false;
-//        int i = 0;
-//        if (socket != null) {
-//            if (socket.isConnected()) {
-//                try {
-//                    socket.close();
-//                } catch (IOException ignored) {
-//                }
-//            }
-//        }
-//
-//        while (!res && i < conCnt) {
-//            System.out.println("!!!Im connecting i = "+i);
-//            try {
-//                socket = new Socket();
-//                //try {
-//                    socket.connect(socketAddress, connectTimeOut);
-//                    this.in = new DataInputStream(socket.getInputStream());
-//                    this.out = new DataOutputStream(socket.getOutputStream());
-//                    res = true;
-//                //}
-//                //catch (SocketTimeoutException | ConnectException | NoRouteToHostException  ignored) { }
-//                System.out.println("!!!Im connect yes i = "+i);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                System.out.println("!!!MeterGSM.connect Ошибка i = " + i + ", ip = " + ip + ", message = " + e.getMessage());
-//                i++;
-//                try { sleep(1000);}catch (InterruptedException ignored){}
-//            }
-//        }
-//        return res;
-//    }
-
     private byte[] readReplyNew(int cntRead) throws IOException {
         byte[] b = new byte[cntRead];
         boolean run = true;
@@ -644,11 +576,7 @@ public class MeterGSM {
             runCnt++;
             if (in.available() > 0) {
                 in.read(b);
-               // System.out.println("!!!b = "+bytesToHex(b));
                 break;
-//                if (b[0] == (byte) 0xAA) {
-//                    break;
-//                }
             }
         }
         return b;
@@ -674,7 +602,7 @@ public class MeterGSM {
         return b;
     }
 
-    private byte[] getCommand(int type) {
+    public byte[] getCommand(int type) {
         byte[] ret = null;
         switch (type) {
             case(0): {
@@ -698,7 +626,7 @@ public class MeterGSM {
         return setAA(setCRC(ret));
     }
 
-    private byte[] setAA(byte[] b) {
+    public byte[] setAA(byte[] b) {
         ByteBuffer buf = ByteBuffer.wrap(new byte[b.length + 1]);
         buf.position(0);
         buf.put((byte) 0xAA);
@@ -708,7 +636,7 @@ public class MeterGSM {
         return ret;
     }
 
-    private byte[] setCRC(byte[] b) {
+    public byte[] setCRC(byte[] b) {
         CRC8 crc = new CRC8();
         crc.reset();
         crc.update(b);

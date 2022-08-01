@@ -8,6 +8,8 @@ import com.company.pnrservices.entity.SM160Log;
 import com.company.pnrservices.entity.SM160LogDiscovery;
 import com.company.pnrservices.entity.SM160LogOperations;
 import com.haulmont.cuba.core.global.AppBeans;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.json.JSONObject;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,7 +17,7 @@ import org.slf4j.Logger;
 
 import java.util.*;
 
-import static com.company.pnrservices.core.AbramHelper.bytesToHex;
+import static com.company.pnrservices.core.AbramHelper.*;
 import static com.company.pnrservices.core.Sm160Helper.logSm160;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.getFirstForSM160REST;
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.getNewToken;
@@ -67,9 +69,14 @@ public class SM160ServiceTest extends BaseTest {
         log.info("!!!Проверка создания основного лога,  ждите...");
         assertEquals(ip, execLog());
         log.info("!!!Проверка создания основного лога,  успешно");
+        meterGSM = execMeterGM();
+        log.info("!!!---------------------------------------------");
+        log.info("!!!Проверка функций,  ждите...");
+        assertEquals(true, functionsTest(), "Ошибка в проверке функций functionsTest");
+        log.info("!!!Проверка функций   успешно");
         log.info("!!!---------------------------------------------");
         log.info("!!!Проверка соединения по ip = "+ip+", port = "+port+"   ждите...");
-        meterGSM = execMeterGM();
+//        meterGSM = execMeterGM();
         assertEquals(true, meterGSM.connectNew2(2));
         log.info("!!!Проверка соединения по ip = "+ip+", port = "+port+"   успешно");
         log.info("!!!---------------------------------------------");
@@ -161,14 +168,11 @@ public class SM160ServiceTest extends BaseTest {
         setParams();
         TOKEN = getNewToken();
         assert TOKEN != null : "TOKEN is null";
-
         log.info("!!!---------------------------------------------");
         log.info("!!!Получение первичного списка,  ждите...");
         getFirstList(TOKEN);
         assertEquals(limitIPsList.size(), firstListSize, "не полный список");
-        //assertEquals(true, getFirstList(TOKEN), "получение первичного списка");
         log.info("!!!Получение первичного списка,  успешно");
-
         log.info("!!!---------------------------------------------");
         log.info("!!!Проверка HashMap,  ждите...");
         sm160Service = AppBeans.get(SM160Service.class);
@@ -192,9 +196,13 @@ public class SM160ServiceTest extends BaseTest {
                 log.info("!!!Проверка создания основного лога " + getParamsString() + ",  ждите...");
                 assertEquals(ip, execLog(), "ошибка execLog "+index+"/"+hashMap.size()+",  "+getParamsString());
                 log.info("!!!Проверка создания основного лога " + getParamsString() + ",  успешно");
+                meterGSM = execMeterGM();
+                log.info("!!!---------------------------------------------");
+                log.info("!!!Проверка функций,  ждите...");
+                assertEquals(true, functionsTest(), "Ошибка в проверке функций functionsTest");
+                log.info("!!!Проверка функций   успешно");
                 log.info("!!!---------------------------------------------");
                 log.info("!!!Проверка соединения для " + getParamsString() + "   ждите...");
-                meterGSM = execMeterGM();
                 assertEquals(true, meterGSM.connectNew2(2), "ошибка Connect "+index+"/"+hashMap.size()+",  "+getParamsString());
                 log.info("!!!Проверка соединения для " + getParamsString() + "   успешно");
                 log.info("!!!---------------------------------------------");
@@ -255,22 +263,65 @@ public class SM160ServiceTest extends BaseTest {
         return ret;
     }
 
-    void functionTest() {
+    boolean functionsTest() {
         assertEquals("null", meterGSM.isNullStr(null), "в функции meterGSM.isNullStr проблемы");
-        meterGSM.resultStr = "AA010000AA012222AA013333";
-        meterGSM.parseDiscoverBuffer();
+        assertEquals(JSONObject.NULL, meterGSM.isnull(null), "в функции meterGSM.isnull проблемы");
         assertEquals(true, parseDiscoverBufferCheck(), "не верно работает функция meterGSM.parseDiscoverBuffer");
+
+        meterGSM.replyGetMAC = hexStringToByteArray("AA01191EAED75A0B006F0D00363437372E3034392D30345B385DFFFFFFFF014600007A");
+        meterGSM.setVersion();
+        assertEquals("6477.049-04[8]", meterGSM.versionNumber);
+        assertEquals(null, meterGSM.boardVersion);
+        assertEquals("01",meterGSM.bigVersionPO);
+        assertEquals("0046",meterGSM.smallVersionPO);
+        assertEquals("00",meterGSM.optionNum);
+
+        assertEquals("AED75A0B006F0D00", meterGSM.setMAC());
+
+        assertEquals("AED75A0B006F0D00", meterGSM.extractMACStr("zsdkfnksdfAED75A0B006F0D00zlxdkscfmklmd"));
+
+        assertEquals(true, meterGSM.isZeroAll(hexStringToByteArray("000000000000")));
+
+        try {
+            assertEquals(true, validReply(Hex.decodeHex("777C16006F0D00000036AA011F0A1E3C4C16006F0D0001008DAA011F0A3768C915006F")));
+        } catch(DecoderException e) {
+            log.info("!!!DecodeException message: "+e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        String inHexStr = bytesToHex(new byte[] {(byte) 0xAA, 0x01, 0x00, 0x00, 0x6B});
+        assertEquals(inHexStr, bytesToHex(meterGSM.setAA(meterGSM.setCRC(new byte[]{0x01, 0x00, 0x00}))));
+
+        assertEquals(true, getCommandFunctionTest());
+
+        return true;
+    }
+
+    boolean getCommandFunctionTest() {
+        byte[] b;
+        String inHexStr = bytesToHex(new byte[]{(byte) 0xAA, 0x01, 0x00, 0x00, 0x6B});
+        assertEquals(inHexStr, bytesToHex(meterGSM.getCommand(0)));
+        inHexStr = bytesToHex(new byte[]{(byte) 0xAA, 0x01, 0x07, 0x00, 0x00});
+        assertEquals(inHexStr, bytesToHex(meterGSM.getCommand(7)));
+        inHexStr = bytesToHex(new byte[]{(byte) 0xAA, 0x01, 0x09, 0x00, (byte) 0xD6});
+        assertEquals(inHexStr, bytesToHex(meterGSM.getCommand(9)));
+        inHexStr = bytesToHex(new byte[]{(byte) 0xAA, 0x01, 0x19, 0x08, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
+                (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte) 0xBA});
+        assertEquals(inHexStr, bytesToHex(meterGSM.getCommand(19)));
+        return true;
     }
 
     boolean parseDiscoverBufferCheck() {
         boolean ret = true;
-        meterGSM.resultStr = "AA010000AA011111AA012222AA013333";
+        meterGSM.resultStr = "0000AA011111AA012222AA013333";
         meterGSM.parseDiscoverBuffer();
-        assertEquals(3, meterGSM.toDiscoverMACList.size(), "не верно работает функция meterGSM.parseDiscoverBuffer, размер списка meterGSM.toDiscoverMACList.size() != 3");
+        assertEquals(4, meterGSM.toDiscoverMACList.size(), "не верно работает функция meterGSM.parseDiscoverBuffer, размер списка meterGSM.toDiscoverMACList.size() != 3");
         assertEquals(true, meterGSM.toDiscoverMACList.contains("0000"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 0000 в meterGSM.toDiscoverMACList");
         assertEquals(true, meterGSM.toDiscoverMACList.contains("1111"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 1111 в meterGSM.toDiscoverMACList");
         assertEquals(true, meterGSM.toDiscoverMACList.contains("2222"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 2222 в meterGSM.toDiscoverMACList");
         assertEquals(true, meterGSM.toDiscoverMACList.contains("3333"), "не верно работает функция meterGSM.parseDiscoverBuffer, нет 3333 в meterGSM.toDiscoverMACList");
+        meterGSM.resultStr = "";
         return ret;
     }
 
@@ -367,7 +418,6 @@ public class SM160ServiceTest extends BaseTest {
 
     static void setParamsSingle() {
         rest_host_test = "192.1.0.92:8080";
-        saveResult = true;
 
 //    //1
 //    ip = "10.81.198.39";
@@ -387,6 +437,7 @@ public class SM160ServiceTest extends BaseTest {
 //    num = "33163";
 //    expectedMAC = "C1679D15006F0D00";
 
+        saveResult = false;
         saveToYoda = false;
     }
 
@@ -408,9 +459,9 @@ public class SM160ServiceTest extends BaseTest {
     static void setParams() {
         rest_host_test = "192.1.0.92:8080";
         saveResult = false;
-        saveToYoda = false;
+        saveToYoda = true;
         limitIPsList.add("10.129.13.91");
-        //limitIPsList.add("10.194.27.39");
+       // limitIPsList.add("10.194.27.39");
         //limitIPsList.add("10.129.3.89");
     }
 
