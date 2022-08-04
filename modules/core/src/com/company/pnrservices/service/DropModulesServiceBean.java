@@ -1,6 +1,5 @@
 package com.company.pnrservices.service;
 
-import com.company.pnrservices.core.DropModulesHelper;
 import com.company.pnrservices.core.HermesShell;
 import com.company.pnrservices.core.NativeSQLBean;
 import com.company.pnrservices.entity.LastClosedTerminals;
@@ -18,10 +17,10 @@ import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
 public class DropModulesServiceBean implements DropModulesService {
     @Inject
     private NativeSQLBean nativeSQLBean;
-
-    String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
     @Inject
     private Logger log;
+
+    String hermes_id = "fafc655f-8feb-49ef-d4d0-e61c82e2f86f";
 
     @Override
     public void topologyUpdate() {
@@ -45,7 +44,7 @@ public class DropModulesServiceBean implements DropModulesService {
                 String mac = row.getMac();
                 List<String> meterIds = getMeterIds(mac, TOKEN);
                 for (Object row_meter : meterIds) {
-                    (new UpdaterThread(index, mac, row_meter.toString(), hermes_id, TOKEN, zbMACList.size())).start();
+                    (new UpdaterThread(index, mac, row_meter.toString(), hermes_id, TOKEN, zbMACList.size(),true)).start();
                 }
             }
             log.info("!!!DropModules TopologyUpdate End threads run = "+index);

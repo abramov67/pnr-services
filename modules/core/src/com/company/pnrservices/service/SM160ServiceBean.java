@@ -15,7 +15,7 @@ import static java.lang.Thread.sleep;
 @Service(SM160Service.NAME)
 public class SM160ServiceBean implements SM160Service {
 
-    private static final Logger log = LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
+    private static final Logger log = LoggerFactory.getLogger(SM160ServiceBean.class);
 
     @Override
     public void checkSM160Single(String num, String ip, String port) {

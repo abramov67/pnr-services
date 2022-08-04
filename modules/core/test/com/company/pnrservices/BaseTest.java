@@ -3,6 +3,7 @@ package com.company.pnrservices;
 import com.haulmont.cuba.core.EntityManager;
 import com.haulmont.cuba.core.Persistence;
 import com.haulmont.cuba.core.Transaction;
+import com.haulmont.cuba.core.entity.BaseStringIdEntity;
 import com.haulmont.cuba.core.entity.BaseUuidEntity;
 import com.haulmont.cuba.core.entity.StandardEntity;
 import com.haulmont.cuba.core.global.AppBeans;
@@ -32,7 +33,7 @@ public abstract class BaseTest {
      * should be removed. Than remove it from DB with softDelete = false.
      * The removing will occur in the order FIFO
      *
-     * @param entities Class<? extends StandartEntity> varags
+     * @param entities Class<? extends BaseUuidEntity> varags
      */
     @SafeVarargs
     public final static void clearDB(Class<? extends BaseUuidEntity>... entities) {
@@ -40,6 +41,29 @@ public abstract class BaseTest {
             EntityManager em = persistence.getEntityManager();
             CommitContext removableContext = new CommitContext();
             for (Class<? extends BaseUuidEntity> entityToRemove : entities) {
+                dataManager.load(entityToRemove).list().forEach(removableContext::addInstanceToRemove);
+            }
+            removableContext.getRemoveInstances().forEach(entity -> {
+                em.setSoftDeletion(false);
+                em.remove(entity);
+            });
+            tx.commit();
+        }
+    }
+
+    /**
+     * Param is a varags which expected a Class of Entity which
+     * should be removed. Than remove it from DB with softDelete = false.
+     * The removing will occur in the order FIFO
+     *
+     * @param entities Class<? extends BaseStringIdEntity> varags
+     */
+    @SafeVarargs
+    public final static void clearDBBaseStringIdEntity(Class<? extends BaseStringIdEntity>... entities) {
+        try (Transaction tx = persistence.createTransaction()) {
+            EntityManager em = persistence.getEntityManager();
+            CommitContext removableContext = new CommitContext();
+            for (Class<? extends BaseStringIdEntity> entityToRemove : entities) {
                 dataManager.load(entityToRemove).list().forEach(removableContext::addInstanceToRemove);
             }
             removableContext.getRemoveInstances().forEach(entity -> {

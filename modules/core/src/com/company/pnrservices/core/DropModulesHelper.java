@@ -18,13 +18,14 @@ public class DropModulesHelper {
         String mac;
         String meter_id;
         String hermes_id;
-        String terminal_id;
+        public String terminal_id;
         HermesShell hermesShell;
         NativeSQLBean nativeSQLBean;
         String TOKEN;
         Integer size;
+        boolean saveResult;
 
-        public UpdaterThread(Integer index, String mac, String meter_id, String hermes_id, String token, Integer size) {
+        public UpdaterThread(Integer index, String mac, String meter_id, String hermes_id, String token, Integer size, boolean saveResult) {
             this.index = index;
             this.mac = mac;
             this.meter_id = meter_id;
@@ -33,6 +34,7 @@ public class DropModulesHelper {
             this.nativeSQLBean = AppBeans.get(NativeSQLBean.class);
             this.TOKEN = token;
             this.size = size;
+            this.saveResult = saveResult;
         }
 
         @Override
@@ -42,16 +44,18 @@ public class DropModulesHelper {
             System.out.println(index+"/"+size+" !!topologyUpdate id = "+meter_id+", mac = "+mac);
         }
 
-        private void getTerminalFromShell() {
+        public void getTerminalFromShell() {
             String replyStr = hermesShell.getTerminalID(mac);
+            System.out.println("!!!mac = "+mac+", meter_id = "+meter_id+", replyStr = "+replyStr);
             String s = extractTerminal(replyStr);
             if (s != null) {
+                System.out.println("!!!mac = "+mac+", meter_id = "+meter_id+", s = "+s);
                 terminal_id = s;
-                    upsertTopologyREST(hermes_id, terminal_id, meter_id, mac, TOKEN);
+                if (saveResult) upsertTopologyREST(hermes_id, terminal_id, meter_id, mac, TOKEN);
             }
         }
 
-        private String extractTerminal(String replyStr) {
+        public String extractTerminal(String replyStr) {
             if (replyStr.contains("[ERROR]"))  return null;
             int ind = replyStr.indexOf("THW[");
             if (ind > -1) {
