@@ -119,7 +119,7 @@ public class DropModulesServiceBean implements DropModulesService {
 
     }
 
-    private void saveClosedTerminal(String imei, String hermes_id) {
+    public void saveClosedTerminal(String imei, String hermes_id) {
         nativeSQLBean.insertLastClosedTerminal(imei, hermes_id);
     }
 

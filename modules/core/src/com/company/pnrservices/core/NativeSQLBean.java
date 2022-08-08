@@ -29,7 +29,7 @@ public class NativeSQLBean {
     }
 
     public List<LastClosedTerminals> getLastClosedTerminals() {
-        return dataManager.load(LastClosedTerminals.class).list();
+        return dataManager.load(LastClosedTerminals.class).query("select l from pnrservices_LastClosedTerminals l order by l.imei").list();
     }
 
     public void insertLastClosedTerminal(String imei, String hermesId) {

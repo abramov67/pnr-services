@@ -6,5 +6,6 @@ public interface DropModulesService {
     void topologyUpdate();
     void openClosedTerminals();
     void dropZBModules(String withCloseTerminals);
+    void saveClosedTerminal(String imei, String hermes_id);
 
 }
