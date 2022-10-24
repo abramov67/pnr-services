@@ -43,7 +43,7 @@ class ClearTopologyTest extends BaseTest {
 
         log.info("!!!---------------------------------------------");
         log.info("!!!Проверка REST метода   ждите...");
-        clearTopologyREST(TOKEN);
+        clearTopologyREST("3", TOKEN);
         log.info("!!!Проверка REST метода   успешно");
         log.info("!!!---------------------------------------------");
         log.info("!!!Проверка закончена, все Ок!");

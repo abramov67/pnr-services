@@ -217,6 +217,7 @@ public class Sm160Helper {
                         //if (sim.sm_port != null) {
                             MeterGSM m = new MeterGSM(1, 1, ip, port, num,
                                     sm160Log.getId().toString(), saveToYoda, TOKEN);
+
                             try {
                                 m.setResult();
                             } catch (IOException e) {

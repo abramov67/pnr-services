@@ -64,10 +64,7 @@ public class SM160ServiceBean implements SM160Service {
             int  index = 0;
             for (Map.Entry<UUID, List<MapCheckSm160Sim>> map : hashMap.entrySet()) {
                 index++;
-                //(new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).workSM160();
                 (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).start();
-                //Временное ограничение
-                //if (index > 40) break;
                 try {
                     sleep( 100);
                 } catch (InterruptedException ignored) {      }

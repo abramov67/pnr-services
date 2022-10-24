@@ -26,8 +26,8 @@ public class ClearTopologyServiceBean implements ClearTopologyService {
         }
 
         log.info(timeFormat(new Date()) + " !!!Запущена чистка топологии. limitInt = " + limitInt);
-        clearTopologyREST(TOKEN);
-        log.info(timeFormat(new Date()) + " !!!Чистка топологии завершена");
+        clearTopologyREST(limitInt, TOKEN);
+        log.info(timeFormat(new Date()) + " !!!Чистка топологии завершен");
 
     }
 

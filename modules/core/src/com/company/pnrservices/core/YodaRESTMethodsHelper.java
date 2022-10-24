@@ -174,8 +174,9 @@ public class YodaRESTMethodsHelper {
                 token, "updateMeterForUpdateSerial", "object");
     }
 
-    public static void clearTopologyREST(String token) {
-        baseREST(null, token, "clearTopology", "object");
+    public static void clearTopologyREST(String savedDaysOfHistory, String token) {
+        baseREST(createListPairParams("savedDaysOfHistory="+savedDaysOfHistory),
+                token, "clearTopology", "object");
     }
 
     public static List<String> getTerminalsForUpdateTopologyREST(String token) {
@@ -205,12 +206,19 @@ public class YodaRESTMethodsHelper {
 
     public static void updaterForSM160REST(String jsonObjParams, String token) {
         baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
-                token, "updaterForSM160", "object");
+                token, "updateTopologySM160", "object");
+                //token, "updaterForSM160", "object");
     }
 
-    public static void updaterForSM160RESTSingle(String jsonObjParams, String token) {
-        baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
-                token, "updaterForSM160Single", "object");
+//    public static void updaterForSM160RESTSingle(String jsonObjParams, String token) {
+//        baseREST(createListPairParams("paramsJSONObject="+jsonObjParams),
+//                token, "updateTopologySM160", "object");
+////                token, "updaterForSM160Single", "object");
+//    }
+
+    public static void clearTopologyForTerminalREST(String terminal, String token) {
+        baseREST(createListPairParams("terminal="+terminal),
+                token, "clearTopologyForTerminal", "object");
     }
 
 }

@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.company.pnrservices.core.AbramHelper.*;
 import static com.company.pnrservices.core.Sm160Helper.logSm160Discovery;
 import static com.company.pnrservices.core.Sm160Helper.logSm160Operations;
-import static com.company.pnrservices.core.YodaRESTMethodsHelper.updaterForSM160REST;
-import static com.company.pnrservices.core.YodaRESTMethodsHelper.updaterForSM160RESTSingle;
+import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
 import static java.lang.Thread.sleep;
 
 public class MeterGSM {
@@ -222,7 +221,8 @@ public class MeterGSM {
 
         if (saveResult) {
             if (saveToYoda) updaterForSM160REST(jsn.toString(), TOKEN);
-            else updaterForSM160RESTSingle(jsn.toString(), TOKEN);
+            else updaterForSM160REST(jsn.toString(), TOKEN);//updaterForSM160RESTSingle(jsn.toString(), TOKEN);
+            logSm160Operations(logId, "saved to yoda end, saveToYoda = "+saveToYoda, jsn.toString(), null);
         }
         logSm160Operations(logId, "saveToYodaREST end", jsn.toString(), null);
         return jsn;
