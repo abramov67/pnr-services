@@ -1,7 +1,6 @@
 package com.company.pnrservices.service;
 
 import com.company.pnrservices.core.Sm160Helper;
-import org.apache.poi.ss.formula.functions.T;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,17 +56,25 @@ public class SM160ServiceBean implements SM160Service {
         }
 
         if (TOKEN != null) {
-            List<JSONObject> firstList = getFirstForSM160REST(intLimit.toString(), TOKEN);
-            System.out.println("!!!firstList.size = "+firstList.size());
-            HashMap<UUID, List<MapCheckSm160Sim>> hashMap = new HashMap<>();
-            mapSet(hashMap, firstList);
-            int  index = 0;
-            for (Map.Entry<UUID, List<MapCheckSm160Sim>> map : hashMap.entrySet()) {
-                index++;
-                (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).start();
-                try {
-                    sleep( 100);
-                } catch (InterruptedException ignored) {      }
+            try {
+                List<JSONObject> firstList = getFirstForSM160REST(intLimit.toString(), TOKEN);
+                log.info("!!!firstList.size = " + firstList.size());
+                //System.out.println("!!!firstList.size = "+firstList.size());
+                HashMap<UUID, List<MapCheckSm160Sim>> hashMap = new HashMap<>();
+                mapSet(hashMap, firstList);
+                int index = 0;
+                for (Map.Entry<UUID, List<MapCheckSm160Sim>> map : hashMap.entrySet()) {
+                    index++;
+                    (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).start();
+                    try {
+                        sleep(100);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            } catch (Exception e) {
+                log.info("!!!"+Arrays.toString(e.getStackTrace()));
+                e.printStackTrace();
+                return;
             }
         }
         log.info("!!!End SM160");
@@ -80,7 +87,7 @@ public class SM160ServiceBean implements SM160Service {
                 MapCheckSm160Sim sm = new MapCheckSm160Sim();
                 UUID id = UUID.fromString(t.getString("id"));
                 sm.equip_number = t.getString("equip_number").equals("null") ? null : t.getString("equip_number");
-                sm.ne_id = t.getString("ne_id").equals("null") ? null : UUID.fromString(t.getString("ne_id"));
+                sm.ne_id = null;//t.getString("ne_id").equals("null") ? null : UUID.fromString(t.getString("ne_id"));
                 sm.id = id;
                 sm.sim_ip = t.getString("sim_ip").equals("null") ? null : t.getString("sim_ip");
                 sm.sim_id = t.getString("sim_id").equals("null") ? null : UUID.fromString(t.getString("sim_id"));

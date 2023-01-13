@@ -331,12 +331,28 @@ public class MeterGSM {
             int ind = tmp.indexOf("F0D00");
             if (ind > 10) {
                 MAC = tmp.substring(ind - 11, ind + 5);
-
-                //-------------------
                 discoverMACs.add(MAC);
                 res = MAC;
+            } else {
+                ind = tmp.indexOf("FEFF");
+                if (ind > 5) {
+                    //log.info("!!!FEFF MAC reply = "+tmp);
+                    MAC = tmp.substring(ind - 6, ind + 4 + 6);
+                    //log.info("!!!MAC = "+MAC);
+                    discoverMACs.add(MAC);
+                    res = MAC;
+                } else {
+                    ind = tmp.indexOf("E1E00");
+                    if (ind > 10) {
+                        MAC = tmp.substring(ind - 11, ind + 5);
+                        discoverMACs.add(MAC);
+                        res = MAC;
+                    }
+                }
             }
         } catch (Exception e) {
+            log.error("!!!setMAC Exception tmp = "+tmp+", message = "+e.getMessage());
+            log.error("!!!setMAC Exception stackTrace " + Arrays.toString(e.getStackTrace()));
             System.out.println("!!!MeterGSM.setMac = " + tmp);
             e.printStackTrace();
         }
@@ -349,9 +365,26 @@ public class MeterGSM {
             int ind = s.indexOf("F0D00");
             if (ind > 10) {
                 res = s.substring(ind - 11, ind + 5);
+            } else {
+                ind = s.indexOf("FEFF");
+                if (ind > 5) {
+                    //log.info("!!!extractMAC MAC reply = "+s);
+                    res = s.substring(ind - 6, ind + 4 + 6);
+                    //log.info("!!!extractMAC = "+res);
+                } else {
+                    ind = s.indexOf("E1E00");
+                    if (ind > 10) {
+                        //log.info("!!!extractMAC E1E00 reply = " + s);
+                        res = s.substring(ind - 11, ind + 5);
+                        //log.info("!!!extractMAC E1E00 = " + res);
+                    }
+                }
             }
         } catch (Exception e) {
-
+            log.error("!!!extractMAC Exception tmp = "+s+", message = "+e.getMessage());
+            log.error("!!!extractMAC Exception stackTrace " + Arrays.toString(e.getStackTrace()));
+            System.out.println("!!!MeterGSM.setMac = " + s);
+            e.printStackTrace();
         }
         return res;
     }
@@ -368,7 +401,7 @@ public class MeterGSM {
         logSm160Operations(logId, "toDiscoverNew start",null,null);
         boolean reconnect = true;//false;
         boolean ret = false;
-        int cntBased = 80;
+        int cntBased = 150;
         int cnt = cntBased;
         try {
             if (socket.isConnected()) {
@@ -568,9 +601,9 @@ public class MeterGSM {
         byte[] b = new byte[cntRead];
         boolean run = true;
         int runCnt = 0;
-        while (run && runCnt < 5) {
+        while (run && runCnt < 10) {
             try {
-                sleep(100);
+                sleep(150);
             } catch (InterruptedException ignored) {
             }
             runCnt++;

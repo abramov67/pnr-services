@@ -19,6 +19,8 @@
                        value="com.company.pnrservices.service.UpdateTopologyService"/>
                 <entry key="pnrservices_SM160Service" value="com.company.pnrservices.service.SM160Service"/>
                 <entry key="pnrservices_NativeQueryService" value="com.company.pnrservices.service.NativeQueryService"/>
+                <entry key="pnrservices_HermesPollingService"
+                       value="com.company.pnrservices.service.hermes.HermesPollingService"/>
             </map>
         </property>
     </bean>

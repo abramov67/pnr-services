@@ -221,4 +221,9 @@ public class YodaRESTMethodsHelper {
                 token, "clearTopologyForTerminal", "object");
     }
 
+    public static String getMacsListForHermesREST(String token) {
+        return baseREST(null,
+                token, "getMacsListForHermes", "object");
+    }
+
 }

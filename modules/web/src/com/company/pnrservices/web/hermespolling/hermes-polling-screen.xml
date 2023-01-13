@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<window xmlns="http://schemas.haulmont.com/cuba/screen/window.xsd"
+        caption="Опрос Гермес111"
+        messagesPack="com.company.pnrservices.web.hermespolling">
+    <layout>
+        <vbox width="100%" height="100%">
+            <hbox spacing="true" margin="true" stylename="card">
+                <textField id="idMACText" caption="MAC" maxLength="16" align="MIDDLE_LEFT"/>
+                <textField id="idCommandText" caption="Команда" align="MIDDLE_LEFT"/>
+                <button id="idRunCommand" caption="Запустить" invoke="runCommand" align="MIDDLE_LEFT"/>
+            </hbox>
+            <hbox spacing="true" height="100%" width="100%" stylename="card">
+                <textArea id="idResultArea" width="100%" height="100%" align="TOP_LEFT"/>
+            </hbox>
+        </vbox>
+    </layout>
+</window>
