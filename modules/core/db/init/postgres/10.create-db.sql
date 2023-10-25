@@ -94,3 +94,21 @@ create table PNRSERVICES_SM160_LOG (
     primary key (ID)
 )^
 -- end PNRSERVICES_SM160_LOG
+-- begin PNRSERVICES_SM160_LOG_DISCOVERY_REPLY
+create table PNRSERVICES_SM160_LOG_DISCOVERY_REPLY (
+    ID uuid,
+    VERSION integer not null,
+    CREATE_TS timestamp,
+    CREATED_BY varchar(50),
+    UPDATE_TS timestamp,
+    UPDATED_BY varchar(50),
+    DELETE_TS timestamp,
+    DELETED_BY varchar(50),
+    --
+    LOG_ID uuid,
+    REPLY text,
+    MESSAGE text,
+    --
+    primary key (ID)
+)^
+-- end PNRSERVICES_SM160_LOG_DISCOVERY_REPLY

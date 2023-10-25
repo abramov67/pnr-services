@@ -23,4 +23,8 @@ public interface HermesConfig extends Config {
     @Property("hermesPerm.password")
     @Default("pass")
     String getHermesPermPassword();
+
+    @Property("sm160.discoverPoolingSec")
+    @Default("240")
+    String getSm160DiscoverPoolingSec();
 }

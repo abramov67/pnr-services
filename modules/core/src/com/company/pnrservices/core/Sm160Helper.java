@@ -2,6 +2,7 @@ package com.company.pnrservices.core;
 
 import com.company.pnrservices.entity.SM160Log;
 import com.company.pnrservices.entity.SM160LogDiscovery;
+import com.company.pnrservices.entity.SM160LogDiscoveryReply;
 import com.company.pnrservices.entity.SM160LogOperations;
 import com.company.pnrservices.service.SM160Service;
 import com.company.pnrservices.service.UpdateTopologyServiceBean;
@@ -26,6 +27,18 @@ import java.util.concurrent.*;
 
 @Component("pnrservices_Sm160Helper")
 public class Sm160Helper {
+
+    public static SM160LogDiscoveryReply logSm160DiscoveryReply(String logId, String reply, String message) {
+        Authentication authentication = AppBeans.get(Authentication.class);
+        DataManager dataManager = AppBeans.get(DataManager.class);
+        authentication.begin();
+        SM160LogDiscoveryReply sm160LogDiscoveryReply;
+        sm160LogDiscoveryReply = dataManager.create(SM160LogDiscoveryReply.class);
+        sm160LogDiscoveryReply.setSm160Log(dataManager.load(SM160Log.class).id(UUID.fromString(logId)).one());
+        sm160LogDiscoveryReply.setReply(reply);
+        sm160LogDiscoveryReply.setMessage(message);
+        return dataManager.commit(sm160LogDiscoveryReply);
+    }
 
     public static SM160LogDiscovery logSm160Discovery(String logId, String mac, String message) {
         Authentication authentication = AppBeans.get(Authentication.class);
@@ -85,6 +98,8 @@ public class Sm160Helper {
                 " where  o.sm160Log = :sm";
         String query2 = "select o from pnrservices_SM160LogDiscovery o " +
                 " where  o.sm160Log = :sm";
+        String query3 = "select o from pnrservices_SM160LogDiscoveryReply o " +
+                " where  o.sm160Log = :sm";
         try(Transaction tx = persistence.createTransaction()) {
             EntityManager em = persistence.getEntityManager();
             List<SM160LogOperations> result = em.createQuery(query, SM160LogOperations.class)
@@ -98,6 +113,12 @@ public class Sm160Helper {
                     .getResultList();
             em.setSoftDeletion(false);
             result2.forEach(em::remove);
+
+            List<SM160LogDiscoveryReply> result3 = em.createQuery(query3, SM160LogDiscoveryReply.class)
+                    .setParameter("sm", sm160Log)
+                    .getResultList();
+            em.setSoftDeletion(false);
+            result3.forEach(em::remove);
 
             tx.commit();
         }
@@ -114,24 +135,8 @@ public class Sm160Helper {
         dataManager.commit(sm160Log);
     }
 
-//    public static class MapCheckSm160Sim {
-//        public String equip_number;
-//        public UUID ne_id;
-//        public UUID id;
-//        public String sim_ip;
-//        public UUID sim_id;
-//        public String sim_type;
-//        public Integer sm_port;
-//        public String mac;
-//        public String network_pan_id = null;
-//        public Integer channel_num = null;
-//    }
-
-
     public static class WorkSm160Thread extends Thread {
-
         private static final Logger log = LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
-
         boolean saveToYoda = true;
         UUID id;
         List<SM160Service.MapCheckSm160Sim> ip_map;
@@ -139,27 +144,29 @@ public class Sm160Helper {
         int index;
         int size;
         List<SM160Log> sm160LogList;
-        //Single
         String num;
         String ip;
         int port;
+        long discoverSec;
 
-        public WorkSm160Thread(int index, int size, UUID id, List<SM160Service.MapCheckSm160Sim> p_ip_map, String token) {
+        public WorkSm160Thread(int index, int size, UUID id, List<SM160Service.MapCheckSm160Sim> p_ip_map, String token, long discoverSec) {
             this.id = id;
             this.ip_map = p_ip_map;
             this.TOKEN = token;
             this.index = index;
             this.size = size;
             this.sm160LogList = new ArrayList<>();
+            this.discoverSec = discoverSec;
         }
 
-        public WorkSm160Thread(String num, String ip, int port,  String token) {
+        public WorkSm160Thread(String num, String ip, int port,  String token, long discoverSec) {
             this.ip = ip;
             this.num = num;
             this.port = port;
             saveToYoda =  false;
             this.sm160LogList = new ArrayList<>();
             this.TOKEN = token;
+            this.discoverSec = discoverSec;
         }
 
         @Override
@@ -183,7 +190,8 @@ public class Sm160Helper {
                         if (sim.sm_port != null) {
                             MeterGSM m = new MeterGSM(index, size, sim.sim_ip, sim.sm_port,
                                     TOKEN, id, sim.equip_number,
-                                    sm160Log.getId().toString(), true);
+                                    sm160Log.getId().toString(), true, discoverSec);
+                            m.forSingle = false;
                             try {
                                 m.setResult();
                             } catch (IOException e) {
@@ -207,25 +215,23 @@ public class Sm160Helper {
         }
 
         public void workSM160Single() {
+//            HermesConfig hermesConfig = AppBeans.get(HermesConfig.class);
+//            long discoverSec = Long.parseLong(hermesConfig.getSm160DiscoverPoolingSec());
             ExecutorService es = Executors.newSingleThreadExecutor();
             TimeLimiter tl = SimpleTimeLimiter.create(es);
             try {
                 tl.callWithTimeout(() -> {
-//                    for (MapCheckSm160Sim sim : ip_map) {
-                        SM160Log sm160Log = logSm160(ip, num, port);
-                        sm160LogList.add(sm160Log);
-                        //if (sim.sm_port != null) {
-                            MeterGSM m = new MeterGSM(1, 1, ip, port, num,
-                                    sm160Log.getId().toString(), saveToYoda, TOKEN);
+                    SM160Log sm160Log = logSm160(ip, num, port);
+                    sm160LogList.add(sm160Log);
+                    MeterGSM m = new MeterGSM(1, 1, ip, port, num,
+                            sm160Log.getId().toString(), saveToYoda, TOKEN, discoverSec);
+                    m.forSingle = true;
 
-                            try {
-                                m.setResult();
-                            } catch (IOException e) {
-                                System.out.println("!!!workSM160 IOException: "+e.getMessage());
-                                //e.printStackTrace();
-                            }
-                        //}
-                    //}
+                    try {
+                        m.setResult();
+                    } catch (IOException e) {
+                        System.out.println("!!!workSM160 IOException: "+e.getMessage());
+                    }
                     return null;
                 }, 3000L, TimeUnit.SECONDS);
             } catch (TimeoutException | UncheckedIOException e){

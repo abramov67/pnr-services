@@ -21,6 +21,14 @@
                 </query>
             </loader>
         </collection>
+        <collection id="idSM160LogDiscoveryReplyDc"
+                    class="com.company.pnrservices.entity.SM160LogDiscoveryReply" view="sM160LogDiscoveryReply-view">
+            <loader id="idSM160LogDiscoveryReplyDl">
+                <query>
+                    <![CDATA[select e from pnrservices_SM160LogDiscoveryReply e where e.sm160Log.id = :log_id]]>
+                </query>
+            </loader>
+        </collection>
 
     </data>
     <dialogMode height="600"
@@ -72,22 +80,43 @@
                         </buttonsPanel>
                     </groupTable>
                 </vbox>
-                <vbox id="idDetailBox" height="100%" margin="false,false,false,true" expand="fieldGroupBox" spacing="true">
-                    <scrollBox id="fieldGroupBox">
-                        <groupTable id="idSM160LogOperationsTable"
-                                    width="100%"
-                                    dataContainer="idSM160LogOperationsDc" textSelectionEnabled="true" stylename="small">
-                            <columns>
-                                <column id="createTs" caption="start" sort="ASCENDING">
-                                    <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="dd.MM.yy HH:mm:ss.SSS"/>
-                                </column>
-                                <column id="type" caption="тип"/>
-                                <column id="message" caption="message" maxTextLength="20"/>
-                                <column id="stackTrace" caption="Stack trace" maxTextLength="20"/>
-                            </columns>
-                        </groupTable>
-                    </scrollBox>
-                </vbox>
+                <tabSheet stylename="framed">
+                    <tab id="idDetailOperationsTab" caption="Операции">
+                        <vbox id="idDetailBox" height="100%" margin="false,false,false,true" expand="fieldGroupBox" spacing="true">
+                            <scrollBox id="fieldGroupBox">
+                                <groupTable id="idSM160LogOperationsTable"
+                                            width="100%"
+                                            dataContainer="idSM160LogOperationsDc" textSelectionEnabled="true" stylename="small">
+                                    <columns>
+                                        <column id="createTs" caption="start" sort="ASCENDING">
+                                            <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="HH:mm:ss.SSS"/>
+                                        </column>
+                                        <column id="type" caption="тип"/>
+                                        <column id="message" caption="message" maxTextLength="20"/>
+                                        <column id="stackTrace" caption="Stack trace" maxTextLength="20"/>
+                                    </columns>
+                                </groupTable>
+                            </scrollBox>
+                        </vbox>
+                    </tab>
+                    <tab id="idDetailDiscoveryReplyTab" caption="Лог ответов Discovery">
+                        <vbox id="idDetailDiscoveryReplyBox" height="100%" margin="false,false,false,true" expand="fieldGroupBoxDiscoveryReply" spacing="true">
+                            <scrollBox id="fieldGroupBoxDiscoveryReply">
+                                <groupTable id="idSM160LogDiscoveryReplyTable"
+                                            width="100%"
+                                            dataContainer="idSM160LogDiscoveryReplyDc" textSelectionEnabled="true" stylename="small">
+                                    <columns>
+                                        <column id="createTs" caption="start" sort="ASCENDING">
+                                            <formatter class="com.haulmont.cuba.gui.components.formatters.DateFormatter" format="HH:mm:ss.SSS"/>
+                                        </column>
+                                        <column id="reply" caption="ответ"/>
+                                        <column id="message" caption="секунды" maxTextLength="20"/>
+                                    </columns>
+                                </groupTable>
+                            </scrollBox>
+                        </vbox>
+                    </tab>
+                </tabSheet>
             </split>
     </layout>
 </window>

@@ -1,6 +1,7 @@
 package com.company.pnrservices.web.sm160;
 
 import com.company.pnrservices.entity.SM160Log;
+import com.company.pnrservices.entity.SM160LogDiscoveryReply;
 import com.company.pnrservices.entity.SM160LogOperations;
 import com.company.pnrservices.entity.notpersistent.SM160LogSelectScr;
 import com.company.pnrservices.service.NativeQueryService;
@@ -48,6 +49,10 @@ public class Sm160LogsScreen extends Screen {
     private Dialogs dialogs;
     @Inject
     private NativeQueryService nativeQueryService;
+    @Inject
+    private CollectionLoader<SM160LogDiscoveryReply> idSM160LogDiscoveryReplyDl;
+    @Inject
+    private CollectionContainer<SM160LogDiscoveryReply> idSM160LogDiscoveryReplyDc;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -72,6 +77,9 @@ public class Sm160LogsScreen extends Screen {
         if (event.getItem() != null) {
             idSM160LogOperationsDl.setParameter("log_id", event.getItem().getId());
             idSM160LogOperationsDl.load();
+
+            idSM160LogDiscoveryReplyDl.setParameter("log_id", event.getItem().getId());
+            idSM160LogDiscoveryReplyDl.load();
         }
     }
 

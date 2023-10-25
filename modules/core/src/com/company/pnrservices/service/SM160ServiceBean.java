@@ -1,11 +1,13 @@
 package com.company.pnrservices.service;
 
 import com.company.pnrservices.core.Sm160Helper;
+import com.company.pnrservices.service.hermes.HermesConfig;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.util.*;
 
 import static com.company.pnrservices.core.YodaRESTMethodsHelper.*;
@@ -13,6 +15,8 @@ import static java.lang.Thread.sleep;
 
 @Service(SM160Service.NAME)
 public class SM160ServiceBean implements SM160Service {
+    @Inject
+    private HermesConfig hermesConfig;
 
     private static final Logger log = LoggerFactory.getLogger(SM160ServiceBean.class);
 
@@ -27,10 +31,10 @@ public class SM160ServiceBean implements SM160Service {
             System.out.println("!!!getNewToken exception = " + e.getMessage());
             e.printStackTrace();
         }
-
         int intPort = Integer.parseInt(port);
 
-        if (TOKEN != null) (new Sm160Helper.WorkSm160Thread(num, ip, intPort, TOKEN)).start();
+        if (TOKEN != null) (new Sm160Helper.WorkSm160Thread(num, ip, intPort, TOKEN,
+                Long.parseLong(hermesConfig.getSm160DiscoverPoolingSec()))).start();
 
         log.info("!!!End SM160 single");
     }
@@ -59,13 +63,13 @@ public class SM160ServiceBean implements SM160Service {
             try {
                 List<JSONObject> firstList = getFirstForSM160REST(intLimit.toString(), TOKEN);
                 log.info("!!!firstList.size = " + firstList.size());
-                //System.out.println("!!!firstList.size = "+firstList.size());
                 HashMap<UUID, List<MapCheckSm160Sim>> hashMap = new HashMap<>();
                 mapSet(hashMap, firstList);
                 int index = 0;
                 for (Map.Entry<UUID, List<MapCheckSm160Sim>> map : hashMap.entrySet()) {
                     index++;
-                    (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN)).start();
+                    (new Sm160Helper.WorkSm160Thread(index, hashMap.size(), map.getKey(), map.getValue(), TOKEN,
+                            Long.parseLong(hermesConfig.getSm160DiscoverPoolingSec()))).start();
                     try {
                         sleep(100);
                     } catch (InterruptedException ignored) {

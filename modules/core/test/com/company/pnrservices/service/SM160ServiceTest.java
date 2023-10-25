@@ -398,7 +398,7 @@ public class SM160ServiceTest extends BaseTest {
     }
 
     MeterGSM execMeterGM() {
-        return new MeterGSM(1, 1, ip, port, num, sm160Log.getId().toString(), saveToYoda, TOKEN);
+        return new MeterGSM(1, 1, ip, port, num, sm160Log.getId().toString(), saveToYoda, TOKEN, 20);
     }
 
     static void createDBSingle() {

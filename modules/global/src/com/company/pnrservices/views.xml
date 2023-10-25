@@ -13,4 +13,8 @@
         <property name="message"/>
         <property name="stackTrace"/>
     </view>
+    <view entity="pnrservices_SM160LogDiscoveryReply" name="sM160LogDiscoveryReply-view" systemProperties="true">
+        <property name="reply"/>
+        <property name="message"/>
+    </view>
 </views>

@@ -8,5 +8,6 @@
         <class>com.company.pnrservices.entity.SM160Log</class>
         <class>com.company.pnrservices.entity.SM160LogOperations</class>
         <class>com.company.pnrservices.entity.SM160LogDiscovery</class>
+        <class>com.company.pnrservices.entity.SM160LogDiscoveryReply</class>
     </persistence-unit>
 </persistence>
