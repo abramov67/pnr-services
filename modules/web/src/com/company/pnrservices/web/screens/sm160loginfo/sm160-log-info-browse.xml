@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<window xmlns="http://schemas.haulmont.com/cuba/screen/window.xsd"
+        xmlns:c="http://schemas.haulmont.com/cuba/screen/jpql_condition.xsd"
+        caption="SM160 logs info"
+        focusComponent="sM160LogInfoesTable"
+        messagesPack="com.company.pnrservices.web.screens.sm160loginfo">
+    <data readOnly="true">
+        <collection id="sM160LogInfoesDc"
+                    class="com.company.pnrservices.entity.SM160LogInfo">
+            <view extends="_local" systemProperties="true"/>
+            <loader id="sM160LogInfoesDl">
+                <query>
+                    <![CDATA[select e from pnrservices_SM160LogInfo e]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <dialogMode height="600"
+                width="800"/>
+    <layout expand="sM160LogInfoesTable"
+            spacing="true">
+        <filter id="filter"
+                applyTo="sM160LogInfoesTable"
+                dataLoader="sM160LogInfoesDl">
+            <properties include=".*"/>
+        </filter>
+        <groupTable id="sM160LogInfoesTable"
+                    width="100%"
+                    dataContainer="sM160LogInfoesDc" editable="false">
+            <actions>
+                <action id="refresh" type="refresh"/>
+                <action id="excel" type="excel"/>
+            </actions>
+            <columns>
+                <column id="createTs" caption="create time" dateFormat="dd.MM.yyyy HH:mm:ss"/>
+                <column id="updateTs" caption="update time" dateFormat="dd.MM.yyyy HH:mm:ss"/>
+                <column id="login"/>
+                <column id="panId"/>
+                <column id="channel"/>
+                <column id="isJoinPermitted"/>
+                <column id="data_receive_id" caption="Data receive id"/>
+            </columns>
+            <rowsCount/>
+            <buttonsPanel id="buttonsPanel"
+                          alwaysVisible="true">
+                <button id="refreshBtn" action="sM160LogInfoesTable.refresh"/>
+                <button id="excelBtn" action="sM160LogInfoesTable.excel"/>
+            </buttonsPanel>
+        </groupTable>
+        <hbox id="lookupActions" spacing="true" visible="false">
+            <button action="lookupSelectAction"/>
+            <button action="lookupCancelAction"/>
+        </hbox>
+    </layout>
+</window>

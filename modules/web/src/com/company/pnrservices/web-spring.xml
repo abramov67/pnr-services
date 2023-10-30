@@ -21,6 +21,8 @@
                 <entry key="pnrservices_NativeQueryService" value="com.company.pnrservices.service.NativeQueryService"/>
                 <entry key="pnrservices_HermesPollingService"
                        value="com.company.pnrservices.service.hermes.HermesPollingService"/>
+                <entry key="pnrservices_SM160LogInfoService"
+                       value="com.company.pnrservices.service.SM160LogInfoService"/>
             </map>
         </property>
     </bean>

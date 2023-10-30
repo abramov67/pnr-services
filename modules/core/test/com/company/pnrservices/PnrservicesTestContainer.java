@@ -13,9 +13,9 @@ public class PnrservicesTestContainer extends TestContainer {
         dbUrl = "jdbc:postgresql://192.1.1.25:5432/pnrServices_test_services";
         dbUser = "pnrUserDB";
         dbPassword = "k~KqjUp9?$$NJ4Ffx@x9";
-        appComponents = new ArrayList<>(Arrays.asList(
-                "com.haulmont.cuba"
-        ));
+        appComponents = Arrays.asList(
+                "com.haulmont.cuba",
+                "com.haulmont.addon.restapi");
         appPropertiesFiles = Arrays.asList(
                 "com/haulmont/cuba/testsupport/test-app.properties",
                 "com/company/pnrservices/test-app.properties");

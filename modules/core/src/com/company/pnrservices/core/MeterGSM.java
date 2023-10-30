@@ -1,8 +1,10 @@
 package com.company.pnrservices.core;
 
+import com.company.pnrservices.service.SM160LogInfoService;
 import com.company.pnrservices.service.UpdateTopologyServiceBean;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
+import com.haulmont.cuba.core.global.AppBeans;
 import com.sun.mail.iap.ByteArray;
 import org.apache.commons.lang3.ArrayUtils;
 import org.json.JSONObject;
@@ -34,6 +36,9 @@ import static java.lang.Thread.sleep;
 
 public class MeterGSM {
     private static final Logger log = LoggerFactory.getLogger(UpdateTopologyServiceBean.class);
+
+    SM160LogInfoService sm160LogInfoService = AppBeans.get(SM160LogInfoService.class);
+
 
     UUID id;
     String ip;
@@ -139,6 +144,12 @@ public class MeterGSM {
                                     + ", networkPanID = " + isNullStr(networkPanID)
                                     + ", JoiningPermitted = " + isJoiningPermitted.toString(),
                             null);
+                    sm160LogInfoService.upsertStoredProc(
+                            equipNumber,
+                            panID,
+                            Integer.parseInt(channelNum, 16),
+                            isJoiningPermitted
+                    );
                 }
 
                 if (getMAC()) {
@@ -669,6 +680,11 @@ public class MeterGSM {
                 byte[] cmd = getCommand(9);
                 out.write(cmd);
                 out.flush();
+                System.out.println("!!!checkInfo start");
+                try {
+                    sleep(1000);
+                } catch (InterruptedException ignored) {
+                }
 //                replyCheckInfo = readReply(17);
                 replyCheckInfo = readReply(40);
                 logSm160Operations(logId, "checkInfo replyBeforeClear", "reply = "+bytesToHex(replyCheckInfo), null);
@@ -682,11 +698,12 @@ public class MeterGSM {
             }
         } catch (Exception e) {
             logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
-//            System.out.println("!!!checkInfo exception: "+e.getMessage());
-//            e.printStackTrace();
+            System.out.println("!!!checkInfo exception: "+e.getMessage());
+            e.printStackTrace();
         }
         finally {
             logSm160Operations(logId, "checkInfo finally end", "ret = "+ret, null);
+            System.out.println("!!!checkInfo end");
         }
         return ret;
     }
