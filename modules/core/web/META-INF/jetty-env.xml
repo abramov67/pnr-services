@@ -8,6 +8,7 @@
             <New class="org.apache.commons.dbcp2.BasicDataSource">
                 <Set name="driverClassName">org.postgresql.Driver</Set>
                 <Set name="url">jdbc:postgresql://192.1.0.222:6354/pnrServices</Set>
+<!--                <Set name="url">jdbc:postgresql://192.1.1.26:5432/pnrService_test</Set>-->
                 <Set name="username">pnrUserDB</Set>
                 <Set name="password">k~KqjUp9?$$NJ4Ffx@x9</Set>
                 <Set name="maxIdle">2</Set>

@@ -1,14 +1,13 @@
 package com.company.pnrservices.core;
 
-
-import org.apache.commons.codec.binary.Hex;
-
+import javax.validation.constraints.NotNull;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
+
+import static java.lang.Thread.sleep;
 
 public class AbramHelper {
 
@@ -94,16 +93,23 @@ public class AbramHelper {
 //        return String.format("%1$2d:%2$2d:%3$2d.%4$3d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart(), d.toMillisPart());
 //    }
 
+    public static boolean validReplyWithoutClear(byte[] b) {
+        boolean ret = false;
+        if (b != null && b.length > 0 && b[0] == (byte) 0xAA) {
+                ret = isCRC(b);
+            System.out.println("!!!isCRC Without clear = "+ret+", reply = "+bytesToHex(b));
+        }
+        return ret;
+    }
+
     public static boolean validReply(byte[] b) {
         boolean ret = false;
-        if (b != null) {
-            if (b.length > 0) {
-                b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
-                if (b[0] == (byte) 0xAA) {
-                    //b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
-                    ret = isCRC(b);
-                }
+        if (b != null && b.length > 0) {
+            b = getBeforeTwoAA(clearBeforeAA(clearLast0(b)));
+            if (b.length > 0 && b[0] == (byte) 0xAA) {
+                ret = isCRC(b);
             }
+            System.out.println("!!!isCRC = "+ret+", reply = "+bytesToHex(b));
         }
         return ret;
     }
@@ -127,6 +133,20 @@ public class AbramHelper {
         crc.reset();
         crc.update(b);
         return (byte) crc.getValue();
+    }
+
+    public static void myWait(Integer millis) {
+        try {
+            sleep(millis);
+        } catch (InterruptedException ignored) {
+        }
+    }
+
+    public static boolean isAllZero(@NotNull byte[] bytes) {
+        for (int i=0; i<bytes.length; i++) {
+            if (!byteCompare(bytes[i], (byte) 0)) return false;
+        }
+        return true;
     }
 
 }

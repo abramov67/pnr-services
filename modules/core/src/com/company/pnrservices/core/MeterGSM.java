@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static com.company.pnrservices.core.AbramHelper.*;
 import static com.company.pnrservices.core.Sm160Helper.*;
@@ -120,7 +119,7 @@ public class MeterGSM {
             try {
                 logSm160Operations(logId, "setResult start", null, null);
                 lastBootConnection = new Date();
-                if (checkInfo()) {
+                if (checkInfoOpros(7)) {// checkInfo(5)) {
                     channelNum = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.toArray(replyCheckInfo[4])));
                     panID = bytesToHex(ArrayUtils.toPrimitive(ArrayUtils.addAll(
                             ArrayUtils.toArray(replyCheckInfo[6], replyCheckInfo[5])
@@ -176,7 +175,7 @@ public class MeterGSM {
 
             } finally {
                 logSm160Operations(logId, "setResult end", null, null);
-                socket.close();
+                disconnect(3);
                 System.out.println(dateTimeFormat(new Date())+"/"+index+"/"+size+"/"+deltaTimeFormat(startTime, LocalTime.now())
                         +" !!!finally ip = "+ip+", macs.size = "+discoverMACs.size()+", MAC = "+MAC);
             }
@@ -467,7 +466,7 @@ public class MeterGSM {
 //        }
 //    }
 
-    private boolean sendCommand() {
+    private boolean sendCommandDiscovery() {
         boolean ret = false;
         byte[] cmd = getCommand(7);
         try {
@@ -519,7 +518,7 @@ public class MeterGSM {
             }
             if (reconnectCnt >= reconnectCntMax) break;
             if (isConnect() && allGood) {
-                if (sendCommand()) {
+                if (sendCommandDiscovery()) {
                     LocalDateTime startPartTime = LocalDateTime.now();
                     while (startPartTime.until(LocalDateTime.now(), ChronoUnit.SECONDS) <= discoverPartSec) {
                         replyToDiscover = readReplyDiscover(40);
@@ -554,43 +553,43 @@ public class MeterGSM {
         return ret;
     }
 
-    public boolean toDiscover() {
-        logSm160Operations(logId, "toDiscover wait",null,null);
-        try { sleep(5000);} catch (InterruptedException ignore) {
-            System.out.println("!!!wait exception message = "+ignore.getMessage());
-            logSm160Operations(logId, "toDiscover wait exception",
-                    "message: "+ignore.getMessage(), Arrays.toString(ignore.getStackTrace()));
-        }
-        logSm160Operations(logId, "toDiscover start",null,null);
-        boolean ret = false;
-        LocalDateTime startTime = LocalDateTime.now();
-        try {
-            if (socket.isConnected() && !socket.isClosed()) {
-                byte[] cmd = getCommand(7);
-                out.write(cmd);
-                out.flush();
-                //System.out.println("!!!sec start = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS));
-
-                while (startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS) <= discoverSec) {
-                    replyToDiscover = readReplyDiscover(40);
-//                    System.out.println("!!!sec run = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS)+", reply = "+bytesToHex(replyToDiscover));
-                    if (!isZeroAll(replyToDiscover)) {
-                        discoverReplyBuffer.add(bytesToHex(replyToDiscover));
-                        ret = true;
-                    }
-                }
-                //System.out.println("!!!sec end = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS));
-            }
-        } catch (Exception e) {
-            logSm160Operations(logId, "toDiscover exception","message: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
-            System.out.println("!!!toDiscover exception: "+e.getMessage());
-            e.printStackTrace();
-        }
-        finally {
-            logSm160Operations(logId, "toDiscover finally end","ret = "+ret, null);
-        }
-        return ret;
-    }
+//    public boolean toDiscover() {
+//        logSm160Operations(logId, "toDiscover wait",null,null);
+//        try { sleep(5000);} catch (InterruptedException ignore) {
+//            System.out.println("!!!wait exception message = "+ignore.getMessage());
+//            logSm160Operations(logId, "toDiscover wait exception",
+//                    "message: "+ignore.getMessage(), Arrays.toString(ignore.getStackTrace()));
+//        }
+//        logSm160Operations(logId, "toDiscover start",null,null);
+//        boolean ret = false;
+//        LocalDateTime startTime = LocalDateTime.now();
+//        try {
+//            if (socket.isConnected() && !socket.isClosed()) {
+//                byte[] cmd = getCommand(7);
+//                out.write(cmd);
+//                out.flush();
+//                //System.out.println("!!!sec start = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS));
+//
+//                while (startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS) <= discoverSec) {
+//                    replyToDiscover = readReplyDiscover(40);
+////                    System.out.println("!!!sec run = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS)+", reply = "+bytesToHex(replyToDiscover));
+//                    if (!isZeroAll(replyToDiscover)) {
+//                        discoverReplyBuffer.add(bytesToHex(replyToDiscover));
+//                        ret = true;
+//                    }
+//                }
+//                //System.out.println("!!!sec end = "+startTime.until(LocalDateTime.now(), ChronoUnit.SECONDS));
+//            }
+//        } catch (Exception e) {
+//            logSm160Operations(logId, "toDiscover exception","message: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
+//            System.out.println("!!!toDiscover exception: "+e.getMessage());
+//            e.printStackTrace();
+//        }
+//        finally {
+//            logSm160Operations(logId, "toDiscover finally end","ret = "+ret, null);
+//        }
+//        return ret;
+//    }
 
     private byte[] readReplyDiscover(int cntRead) throws IOException {
         byte[] b = new byte[cntRead];
@@ -671,30 +670,49 @@ public class MeterGSM {
         return ret;
     }
 
-    public boolean checkInfo() {
+    public boolean checkInfoOpros(int reaskCount) {
         logSm160Operations(logId, "checkInfo start", "проверка сети", null);
+        List<byte[]> resultList = new ArrayList<>();
         boolean ret = false;
+        int cntRead = 100;
+        boolean forceReconnect = false;
+        if (socket.isClosed()) connectNew2(1);
         try
         {
             if (socket.isConnected()) {
-                byte[] cmd = getCommand(9);
-                out.write(cmd);
-                out.flush();
-                System.out.println("!!!checkInfo start");
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ignored) {
+                for (int i = 0; i < reaskCount; i++) {
+                    if (sendCommand(9, forceReconnect)) {
+                            disconnect(2);
+                            connectNew2(1);
+                    } else {
+                        AbramHelper.myWait(200);
+                        List<byte[]> replyBytesList = readReplyCheckInfo(cntRead, 10);
+                        resultList.addAll(replyBytesList);
+                    }
                 }
-//                replyCheckInfo = readReply(17);
-                replyCheckInfo = readReply(40);
-                logSm160Operations(logId, "checkInfo replyBeforeClear", "reply = "+bytesToHex(replyCheckInfo), null);
-                replyCheckInfo = getBeforeTwoAA(clearBeforeAA(clearLast0(replyCheckInfo)));
-                ret = validReply(replyCheckInfo);
-                if (replyCheckInfo.length < 17) {
-                    ret = false;
-                    logSm160Operations(logId, "checkInfo validReply = "+ret, "size < 17, reply = "+bytesToHex(replyCheckInfo), null);
-                } else logSm160Operations(logId, "checkInfo validReply = "+ret, "reply = "+bytesToHex(replyCheckInfo), null);
-                //replyCheckInfo = getBeforeAA(clearLast0(replyCheckInfo));
+                for (byte[] bytes: resultList) {
+                    String hexStr = bytesToHex(bytes);
+                    int pos = hexStr.indexOf("AA0109");
+                    if (pos > -1) {
+                        logSm160Operations(logId, "checkInfoAll resultList", hexStr, null);
+                        String validReply = extractReply(hexStr, pos);
+                        if (validReply != null) {
+                            System.out.println("!!!validReply="+validReply);
+                            byte[] bytesFromHex = hexStringToByteArray(validReply);
+                            boolean valid = isValidCheckInfo(bytesFromHex);
+                            if (valid) {
+                                replyCheckInfo = bytesFromHex;
+                                logSm160Operations(logId, "checkInfo validReply = "+valid, "reply = "+validReply, null);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (replyCheckInfo != null) {
+                    ret = true;
+                }
+            } else {
+                logSm160Operations(logId, "checkInfo socket not connected", "после многих попыток не удалось подключиться", null);
             }
         } catch (Exception e) {
             logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
@@ -704,6 +722,115 @@ public class MeterGSM {
         finally {
             logSm160Operations(logId, "checkInfo finally end", "ret = "+ret, null);
             System.out.println("!!!checkInfo end");
+        }
+        return ret;
+    }
+
+    private String extractReply(String hexStr, int pos) {
+        if (hexStr.length() >= pos + 34) {
+            return hexStr.substring(pos, pos + 34);
+        }
+        return null;
+    }
+
+
+//    public boolean checkInfo(int reaskCount) {
+//        logSm160Operations(logId, "checkInfo start", "проверка сети", null);
+//        boolean ret = false;
+//        int cntRead = 100;
+//        if (socket.isClosed()) connectNew2(1);
+//        try
+//        {
+//            if (socket.isConnected()) {
+//                sendCommand(9, false);
+//                System.out.println("!!!checkInfo start");
+//                AbramHelper.myWait(500);
+//                sendCommand(9, false);
+//                System.out.println("!!!checkInfo start2");
+//                AbramHelper.myWait(500);
+//                replyCheckInfo = readReply(cntRead);
+//                logSm160Operations(logId, "checkInfo replyBeforeClear", "reply = "+bytesToHex(replyCheckInfo), null);
+//                if (!isValidCheckInfo(replyCheckInfo)) {
+//                    for (int i = 0; i < reaskCount; i++) {
+//                        sendCommand(9, false);
+//                        AbramHelper.myWait(500);
+//                        replyCheckInfo = readReply(cntRead);
+//                        replyCheckInfo = extractRealMessage(replyCheckInfo, 35);
+//                        boolean validReply = isValidCheckInfo(replyCheckInfo);
+//                        logSm160Operations(logId, "checkInfo replyBeforeClear"+i, "valid = "+validReply+", reply = "+bytesToHex(replyCheckInfo), null);
+//                        if (validReply) {
+//                            break;
+//                        }
+//                    }
+//                }
+//                replyCheckInfo = getBeforeTwoAA(clearBeforeAA(clearLast0(replyCheckInfo)));
+//                ret = isValidCheckInfo(replyCheckInfo);
+//                //ret = validReply(replyCheckInfo);
+//                if (replyCheckInfo.length < 17) {
+//                    ret = false;
+//                    logSm160Operations(logId, "checkInfo validReply = "+ret, "size < 17, reply = "+bytesToHex(replyCheckInfo), null);
+//                } else {
+//                    logSm160Operations(logId, "checkInfo validReply = "+ret, "reply = "+bytesToHex(replyCheckInfo), null);
+//                }
+//            } else {
+//                logSm160Operations(logId, "checkInfo socket not connected", "после многих попыток не удалось подключиться", null);
+//            }
+//        } catch (Exception e) {
+//            logSm160Operations(logId, "checkInfo exception", "exception: "+e.getMessage(), Arrays.toString(e.getStackTrace()));
+//            System.out.println("!!!checkInfo exception: "+e.getMessage());
+//            e.printStackTrace();
+//        }
+//        finally {
+//            logSm160Operations(logId, "checkInfo finally end", "ret = "+ret, null);
+//            System.out.println("!!!checkInfo end");
+//        }
+//        return ret;
+//    }
+
+//    private byte[] extractRealMessage(byte[] bytes, int extractCountBytes) {
+//        if (bytes != null && !isAllZero(bytes)) {
+//            bytes = getBeforeTwoAA(clearBeforeAA(bytes));
+//            if (bytes.length > extractCountBytes)  bytes = getByteSubArray(bytes, 0, extractCountBytes);
+//            System.out.println("!!!extractRealMessage="+bytesToHex(bytes));
+//        }
+//        return bytes;
+//    }
+
+    private boolean isValidCheckInfo(byte[] bytes) {
+        return bytes != null && !isAllZero(bytes) && validReplyWithoutClear(bytes);
+    }
+
+    private boolean sendCommand(int commandType, boolean forceReconnect) {
+        boolean ret = false;
+        boolean writed = false;
+        byte[] cmd = getCommand(commandType);
+        if (forceReconnect) {
+            disconnect(2);
+            connectNew2(1);
+        } else {
+            if (!isConnect()) {
+                disconnect(2);
+                connectNew2(1);
+            }
+        }
+
+        try {
+            out.write(cmd);
+            writed = true;
+        } catch(Exception e) {
+            disconnect(2);
+            connectNew2(1);
+        }
+
+        try {
+            if (!writed) out.write(cmd);
+            out.flush();
+            if (forSingle) System.out.println("!!!sendCommand = "+bytesToHex(cmd));
+            logSm160Operations(logId, "sendCommand",bytesToHex(cmd),null);
+        } catch (IOException e) {
+            ret = true;
+            logSm160Operations(logId, "sendCommand exception", e.getMessage(), Arrays.toString(e.getStackTrace()));
+            System.out.println("!!!sendCommand exception message = " + e.getMessage());
         }
         return ret;
     }
@@ -817,6 +944,33 @@ public class MeterGSM {
         return res.get();
     }
 
+    private void disconnect(int repeat) {
+        for (int i=0; i<repeat; i++) {
+            try {
+                socket.close();
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
+    private List<byte[]> readReplyCheckInfo(int cntRead, int cycleCount) throws IOException {
+        List<byte[]> resultList = new ArrayList<>();
+        byte[] b = new byte[cntRead];
+        boolean run = true;
+        int runCnt = 0;
+        while (run && runCnt < cycleCount) {
+            myWait(200);
+            runCnt++;
+            if (in.available() > 0) {
+                in.read(b);
+                resultList.add(b);
+                //break;
+            }
+        }
+        return resultList;
+    }
+
+
     private byte[] readReplyNew(int cntRead) throws IOException {
         byte[] b = new byte[cntRead];
         boolean run = true;
@@ -897,5 +1051,6 @@ public class MeterGSM {
         ret[ret.length - 1] = (byte) crc.getValue();
         return ret;
     }
+
 
 }
